@@ -23,15 +23,17 @@ export interface SafeHarbourRule {
   eligibilityConditions: string[];
 }
 
+// Safe Harbour Rules - Updated FY 2023-24 onwards per CBDT Notifications
 export const SAFE_HARBOUR_RULES: Record<SafeHarbourType, SafeHarbourRule> = {
   // IT/ITeS Services (Software Development, BPO, etc.)
+  // Updated rates per CBDT Notification for FY 2023-24 onwards
   IT_ITES: {
     name: "IT/ITeS Services",
     description: "Software development, IT support, BPO, call centers",
     marginType: "OP/OC",
     thresholds: [
-      { condition: "Normal case", margin: 17 },
-      { condition: "Significant ownership (>50%)", margin: 18 },
+      { condition: "Normal case", margin: 20 }, // Updated from 17%
+      { condition: "Significant ownership (>50%)", margin: 22 }, // Updated from 18%
     ],
     eligibilityConditions: [
       "Receipt from Associated Enterprise",
@@ -39,15 +41,15 @@ export const SAFE_HARBOUR_RULES: Record<SafeHarbourType, SafeHarbourRule> = {
     ],
   },
 
-  // KPO Services
+  // KPO Services - Updated rates per CBDT Notification
   KPO: {
     name: "Knowledge Process Outsourcing",
     description: "Research, analytics, legal services, engineering design",
     marginType: "OP/OC",
     thresholds: [
-      { condition: "Employee cost < 40% of total cost", margin: 18 },
-      { condition: "Employee cost 40-60% of total cost", margin: 21 },
-      { condition: "Employee cost > 60% of total cost", margin: 24 },
+      { condition: "Employee cost < 40% of total cost", margin: 21 }, // Updated from 18%
+      { condition: "Employee cost 40-60% of total cost", margin: 24 }, // Updated from 21%
+      { condition: "Employee cost > 60% of total cost", margin: 27 }, // Updated from 24%
     ],
     eligibilityConditions: [
       "Receipt from Associated Enterprise",

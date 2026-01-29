@@ -224,12 +224,24 @@ export function calculatePLIs(financialData: FinancialData): Record<string, numb
     plis[PLIType.OP_CE] = 0;
   }
 
-  // Berry Ratio
-  const operatingExpenses = financialData.totalOperatingCost - financialData.rawMaterialCost;
-  if (operatingExpenses > 0) {
+  // Berry Ratio - per OECD Chapter 2, Para 2.101-2.107
+  // Formula: Gross Profit / Operating Expenses
+  // Operating Expenses = Gross Profit - Operating Profit (SG&A and other operating costs)
+  const operatingExpenses = financialData.grossProfit - financialData.operatingProfit;
+  if (operatingExpenses > 0 && financialData.grossProfit > 0) {
     plis[PLIType.BERRY_RATIO] = financialData.grossProfit / operatingExpenses;
   } else {
     plis[PLIType.BERRY_RATIO] = 0;
+  }
+
+  // NCP_SALES (Net Cost Plus) - per OECD Chapter 2, Para 2.39-2.45
+  // Formula: (Revenue - Total Cost) / Total Cost × 100
+  // Used for toll/contract manufacturers and distributors
+  const totalCost = financialData.totalOperatingCost + (financialData.rawMaterialCost || 0);
+  if (totalCost > 0 && financialData.operatingRevenue > 0) {
+    plis[PLIType.NCP_SALES] = ((financialData.operatingRevenue - totalCost) / totalCost) * 100;
+  } else {
+    plis[PLIType.NCP_SALES] = 0;
   }
 
   return plis;

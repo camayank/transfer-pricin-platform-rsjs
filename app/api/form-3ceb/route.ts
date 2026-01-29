@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import {
+  createForm3CEBBuilder,
+  createForm3CEBValidator,
+  TransactionNature,
+  TPMethod,
+  RelationshipType,
+  TRANSACTION_NATURE_DESCRIPTIONS,
+} from "@/lib/engines/form-3ceb-engine";
 
-// Transaction Nature Codes as per Income Tax Rules
-const TRANSACTION_NATURE_CODES = {
+// Re-export from engine for backward compatibility
+// Transaction Nature Codes as per Income Tax Rules (from form-3ceb-engine)
+const TRANSACTION_NATURE_CODES: Record<string, string> = {
+  ...TRANSACTION_NATURE_DESCRIPTIONS,
+  // Legacy mappings for backward compatibility
   "01": "Purchase of raw materials",
   "02": "Sale of raw materials",
   "03": "Purchase of finished goods",
@@ -29,13 +40,14 @@ const TRANSACTION_NATURE_CODES = {
   "99": "Any other transaction",
 };
 
-const TP_METHODS = {
-  CUP: "Comparable Uncontrolled Price Method",
-  RPM: "Resale Price Method",
-  CPM: "Cost Plus Method",
-  PSM: "Profit Split Method",
-  TNMM: "Transactional Net Margin Method",
-  OTHER: "Any Other Method",
+// TP Methods with full descriptions
+const TP_METHODS: Record<string, string> = {
+  [TPMethod.CUP]: "Comparable Uncontrolled Price Method",
+  [TPMethod.RPM]: "Resale Price Method",
+  [TPMethod.CPM]: "Cost Plus Method",
+  [TPMethod.PSM]: "Profit Split Method",
+  [TPMethod.TNMM]: "Transactional Net Margin Method",
+  [TPMethod.OTHER]: "Any Other Method",
 };
 
 interface AssociatedEnterprise {
@@ -274,10 +286,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/form-3ceb/codes - Get transaction codes and TP methods
+// GET /api/form-3ceb/codes - Get transaction codes, TP methods, and relationship types
 export async function GET() {
   return NextResponse.json({
     transactionCodes: TRANSACTION_NATURE_CODES,
     tpMethods: TP_METHODS,
+    relationshipTypes: {
+      [RelationshipType.HOLDING_COMPANY]: "Holding Company",
+      [RelationshipType.SUBSIDIARY]: "Subsidiary",
+      [RelationshipType.FELLOW_SUBSIDIARY]: "Fellow Subsidiary",
+      [RelationshipType.JOINT_VENTURE]: "Joint Venture",
+      [RelationshipType.COMMON_CONTROL]: "Common Control",
+      [RelationshipType.OTHER]: "Other Related Party",
+    },
+    engineVersion: "1.4",
+    schemaVersion: "2025",
   });
 }

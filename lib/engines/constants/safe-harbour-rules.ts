@@ -95,11 +95,11 @@ export const SAFE_HARBOUR_RULES: Record<
     thresholds: [
       {
         condition: "Normal case (no significant ownership)",
-        margin: 17,
+        margin: 20, // Updated FY 2023-24 onwards per CBDT Notification
       },
       {
         condition: "Significant ownership (>50% by single foreign company)",
-        margin: 18,
+        margin: 22, // Updated FY 2023-24 onwards per CBDT Notification
       },
     ],
     eligibilityConditions: [
@@ -109,7 +109,7 @@ export const SAFE_HARBOUR_RULES: Record<
       "Entity must not be engaged in unique or high-value intangibles",
     ],
     maxTransactionValue: 200,
-    validFrom: "2020-21",
+    validFrom: "2023-24", // Updated validity period
     validTo: "2026-27",
     formRequired: "Form 3CEFA",
     notes: [
