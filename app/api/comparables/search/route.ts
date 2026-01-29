@@ -31,15 +31,23 @@ export async function GET() {
     },
     actions: [
       "search",
+      "search_text",
       "get_company",
       "analyze_comparability",
       "calculate_benchmark",
       "apply_wc_adjustment",
       "get_rejection_analysis",
       "get_recommended_pli",
+      "get_industry_benchmark",
+      "get_all_benchmarks",
+      "get_form3ceb_comparables",
+      "validate_company",
+      "get_database_stats",
       "test_connections"
     ],
-    sources: ["PROWESS (CMIE)", "Capitaline"]
+    databaseStats: engine.getDatabaseStats(),
+    industryBenchmarks: Object.keys(engine.getAllIndustryBenchmarks()),
+    sources: ["Internal Database (30+ companies)", "PROWESS (CMIE) - Coming Soon", "Capitaline - Coming Soon"]
   });
 }
 
@@ -239,6 +247,111 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: result
+        });
+      }
+
+      case "search_text": {
+        if (!params?.query) {
+          return NextResponse.json(
+            { error: "Missing 'query' parameter" },
+            { status: 400 }
+          );
+        }
+
+        const companies = engine.searchByText(params.query, params.limit ?? 20);
+        return NextResponse.json({
+          success: true,
+          data: {
+            companies,
+            count: companies.length,
+            query: params.query
+          }
+        });
+      }
+
+      case "get_industry_benchmark": {
+        if (!params?.industry) {
+          return NextResponse.json(
+            { error: "Missing 'industry' parameter" },
+            { status: 400 }
+          );
+        }
+
+        const benchmark = engine.getIndustryBenchmark(params.industry);
+        if (!benchmark) {
+          return NextResponse.json(
+            { error: "Industry benchmark not found" },
+            { status: 404 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          data: benchmark
+        });
+      }
+
+      case "get_all_benchmarks": {
+        return NextResponse.json({
+          success: true,
+          data: engine.getAllIndustryBenchmarks()
+        });
+      }
+
+      case "get_form3ceb_comparables": {
+        if (!params?.functionalProfile) {
+          return NextResponse.json(
+            { error: "Missing 'functionalProfile' parameter" },
+            { status: 400 }
+          );
+        }
+
+        const result = engine.getForm3CEBComparables(
+          params.transactionNature || "Services",
+          params.functionalProfile as FunctionalProfile,
+          {
+            min: params.revenueMin,
+            max: params.revenueMax
+          }
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: result
+        });
+      }
+
+      case "validate_company": {
+        if (!params?.cin) {
+          return NextResponse.json(
+            { error: "Missing 'cin' parameter" },
+            { status: 400 }
+          );
+        }
+
+        const company = await engine.getCompany(params.cin);
+        if (!company) {
+          return NextResponse.json(
+            { error: "Company not found" },
+            { status: 404 }
+          );
+        }
+
+        const validation = engine.validateCompanyData(company);
+        return NextResponse.json({
+          success: true,
+          data: {
+            company: company.name,
+            cin: company.cin,
+            ...validation
+          }
+        });
+      }
+
+      case "get_database_stats": {
+        return NextResponse.json({
+          success: true,
+          data: engine.getDatabaseStats()
         });
       }
 

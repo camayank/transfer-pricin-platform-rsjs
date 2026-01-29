@@ -1171,8 +1171,2245 @@ const SAMPLE_COMPANIES: ComparableCompany[] = [
     lossYears: 0,
     hasExtraordinaryItems: false,
     isAccepted: true
+  },
+
+  // ==========================================================================
+  // ITES/BPO COMPANIES
+  // ==========================================================================
+  {
+    id: "COMP009",
+    cin: "U72300TN2008PTC067890",
+    name: "GlobalServe BPO Services Private Limited",
+    nicCode: "8220",
+    nicDescription: "Activities of call centres",
+    industry: "ITES/BPO",
+    subIndustry: "Business Process Outsourcing",
+    functionalProfile: "ITES_BPO",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 1250000000,
+        operatingRevenue: 1240000000,
+        grossProfit: 375000000,
+        operatingProfit: 137500000,
+        netProfit: 106250000,
+        operatingCost: 1102500000,
+        totalCost: 1143750000,
+        totalAssets: 725000000,
+        fixedAssets: 145000000,
+        currentAssets: 545000000,
+        currentLiabilities: 262500000,
+        inventory: 0,
+        receivables: 208333333,
+        payables: 104166667,
+        capitalEmployed: 462500000,
+        employeeCost: 750000000,
+        depreciation: 43750000,
+        relatedPartyTransactions: 25000000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1100000000,
+        operatingRevenue: 1090000000,
+        grossProfit: 330000000,
+        operatingProfit: 121000000,
+        netProfit: 93500000,
+        operatingCost: 969000000,
+        totalCost: 1006500000,
+        totalAssets: 660000000,
+        fixedAssets: 132000000,
+        currentAssets: 495000000,
+        currentLiabilities: 231000000,
+        inventory: 0,
+        receivables: 183333333,
+        payables: 91666667,
+        capitalEmployed: 429000000,
+        employeeCost: 660000000,
+        depreciation: 38500000,
+        relatedPartyTransactions: 22000000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 980000000,
+        operatingRevenue: 970000000,
+        grossProfit: 294000000,
+        operatingProfit: 107800000,
+        netProfit: 83300000,
+        operatingCost: 862200000,
+        totalCost: 896700000,
+        totalAssets: 588000000,
+        fixedAssets: 117600000,
+        currentAssets: 441000000,
+        currentLiabilities: 205800000,
+        inventory: 0,
+        receivables: 163333333,
+        payables: 81666667,
+        capitalEmployed: 382200000,
+        employeeCost: 588000000,
+        depreciation: 34300000,
+        relatedPartyTransactions: 19600000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 12.47, year: "2023-24" },
+      { pliType: "OP_OC", value: 12.49, year: "2022-23" },
+      { pliType: "OP_OC", value: 12.50, year: "2021-22" },
+      { pliType: "OP_OR", value: 11.09, year: "2023-24" },
+      { pliType: "OP_OR", value: 11.10, year: "2022-23" },
+      { pliType: "OP_OR", value: 11.11, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 94,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP010",
+    cin: "U72400KA2010PTC054321",
+    name: "DataProcess India Private Limited",
+    nicCode: "6311",
+    nicDescription: "Data processing, hosting and related activities",
+    industry: "ITES/BPO",
+    subIndustry: "Data Processing",
+    functionalProfile: "ITES_BPO",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 420000000,
+        operatingRevenue: 415000000,
+        grossProfit: 130000000,
+        operatingProfit: 54600000,
+        netProfit: 42000000,
+        operatingCost: 360400000,
+        totalCost: 378000000,
+        totalAssets: 245000000,
+        fixedAssets: 49000000,
+        currentAssets: 183750000,
+        currentLiabilities: 84000000,
+        inventory: 0,
+        receivables: 70000000,
+        payables: 35000000,
+        capitalEmployed: 161000000,
+        employeeCost: 235200000,
+        depreciation: 14700000,
+        relatedPartyTransactions: 8400000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 380000000,
+        operatingRevenue: 375000000,
+        grossProfit: 117800000,
+        operatingProfit: 47500000,
+        netProfit: 36600000,
+        operatingCost: 327500000,
+        totalCost: 343400000,
+        totalAssets: 222000000,
+        fixedAssets: 44400000,
+        currentAssets: 166500000,
+        currentLiabilities: 76000000,
+        inventory: 0,
+        receivables: 63333333,
+        payables: 31666667,
+        capitalEmployed: 146000000,
+        employeeCost: 213200000,
+        depreciation: 13300000,
+        relatedPartyTransactions: 7600000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 340000000,
+        operatingRevenue: 335000000,
+        grossProfit: 105400000,
+        operatingProfit: 40800000,
+        netProfit: 31500000,
+        operatingCost: 294200000,
+        totalCost: 308500000,
+        totalAssets: 198000000,
+        fixedAssets: 39600000,
+        currentAssets: 148500000,
+        currentLiabilities: 68000000,
+        inventory: 0,
+        receivables: 56666667,
+        payables: 28333333,
+        capitalEmployed: 130000000,
+        employeeCost: 190400000,
+        depreciation: 11900000,
+        relatedPartyTransactions: 6800000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 15.15, year: "2023-24" },
+      { pliType: "OP_OC", value: 14.50, year: "2022-23" },
+      { pliType: "OP_OC", value: 13.87, year: "2021-22" },
+      { pliType: "OP_OR", value: 13.16, year: "2023-24" },
+      { pliType: "OP_OR", value: 12.67, year: "2022-23" },
+      { pliType: "OP_OR", value: 12.18, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 90,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP011",
+    cin: "U72500MH2011PTC065432",
+    name: "TranscribeNow Services Private Limited",
+    nicCode: "8211",
+    nicDescription: "Combined office administrative service activities",
+    industry: "ITES/BPO",
+    subIndustry: "Transcription Services",
+    functionalProfile: "ITES_BPO",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 185000000,
+        operatingRevenue: 182000000,
+        grossProfit: 55500000,
+        operatingProfit: 20350000,
+        netProfit: 15700000,
+        operatingCost: 161650000,
+        totalCost: 169300000,
+        totalAssets: 108000000,
+        fixedAssets: 18000000,
+        currentAssets: 83000000,
+        currentLiabilities: 37000000,
+        inventory: 0,
+        receivables: 30833333,
+        payables: 15416667,
+        capitalEmployed: 71000000,
+        employeeCost: 111000000,
+        depreciation: 5400000,
+        relatedPartyTransactions: 1850000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 168000000,
+        operatingRevenue: 165000000,
+        grossProfit: 50400000,
+        operatingProfit: 17640000,
+        netProfit: 13600000,
+        operatingCost: 147360000,
+        totalCost: 154400000,
+        totalAssets: 98000000,
+        fixedAssets: 16000000,
+        currentAssets: 75000000,
+        currentLiabilities: 33600000,
+        inventory: 0,
+        receivables: 28000000,
+        payables: 14000000,
+        capitalEmployed: 64400000,
+        employeeCost: 100800000,
+        depreciation: 4900000,
+        relatedPartyTransactions: 1680000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 152000000,
+        operatingRevenue: 149000000,
+        grossProfit: 45600000,
+        operatingProfit: 15200000,
+        netProfit: 11700000,
+        operatingCost: 133800000,
+        totalCost: 140300000,
+        totalAssets: 89000000,
+        fixedAssets: 14500000,
+        currentAssets: 68000000,
+        currentLiabilities: 30400000,
+        inventory: 0,
+        receivables: 25333333,
+        payables: 12666667,
+        capitalEmployed: 58600000,
+        employeeCost: 91200000,
+        depreciation: 4400000,
+        relatedPartyTransactions: 1520000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 12.59, year: "2023-24" },
+      { pliType: "OP_OC", value: 11.97, year: "2022-23" },
+      { pliType: "OP_OC", value: 11.36, year: "2021-22" },
+      { pliType: "OP_OR", value: 11.18, year: "2023-24" },
+      { pliType: "OP_OR", value: 10.69, year: "2022-23" },
+      { pliType: "OP_OR", value: 10.20, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 88,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP012",
+    cin: "U72600DL2007PTC076543",
+    name: "KnowledgeFirst Analytics Private Limited",
+    nicCode: "6202",
+    nicDescription: "Computer consultancy activities",
+    industry: "ITES/BPO",
+    subIndustry: "KPO Analytics",
+    functionalProfile: "KPO",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 560000000,
+        operatingRevenue: 555000000,
+        grossProfit: 196000000,
+        operatingProfit: 84000000,
+        netProfit: 64800000,
+        operatingCost: 471000000,
+        totalCost: 495200000,
+        totalAssets: 330000000,
+        fixedAssets: 55000000,
+        currentAssets: 255000000,
+        currentLiabilities: 112000000,
+        inventory: 0,
+        receivables: 93333333,
+        payables: 46666667,
+        capitalEmployed: 218000000,
+        employeeCost: 336000000,
+        depreciation: 16500000,
+        relatedPartyTransactions: 5600000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 510000000,
+        operatingRevenue: 505000000,
+        grossProfit: 178500000,
+        operatingProfit: 73950000,
+        netProfit: 57000000,
+        operatingCost: 431050000,
+        totalCost: 453000000,
+        totalAssets: 300000000,
+        fixedAssets: 50000000,
+        currentAssets: 232000000,
+        currentLiabilities: 102000000,
+        inventory: 0,
+        receivables: 85000000,
+        payables: 42500000,
+        capitalEmployed: 198000000,
+        employeeCost: 306000000,
+        depreciation: 15000000,
+        relatedPartyTransactions: 5100000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 465000000,
+        operatingRevenue: 460000000,
+        grossProfit: 162750000,
+        operatingProfit: 65100000,
+        netProfit: 50200000,
+        operatingCost: 394900000,
+        totalCost: 414800000,
+        totalAssets: 274000000,
+        fixedAssets: 45000000,
+        currentAssets: 211000000,
+        currentLiabilities: 93000000,
+        inventory: 0,
+        receivables: 77500000,
+        payables: 38750000,
+        capitalEmployed: 181000000,
+        employeeCost: 279000000,
+        depreciation: 13700000,
+        relatedPartyTransactions: 4650000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 17.83, year: "2023-24" },
+      { pliType: "OP_OC", value: 17.15, year: "2022-23" },
+      { pliType: "OP_OC", value: 16.49, year: "2021-22" },
+      { pliType: "OP_OR", value: 15.14, year: "2023-24" },
+      { pliType: "OP_OR", value: 14.64, year: "2022-23" },
+      { pliType: "OP_OR", value: 14.15, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 93,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // CONTRACT MANUFACTURING COMPANIES
+  // ==========================================================================
+  {
+    id: "COMP013",
+    cin: "U29100MH2006PTC087654",
+    name: "PrecisionMfg India Private Limited",
+    nicCode: "2930",
+    nicDescription: "Manufacture of parts and accessories for motor vehicles",
+    industry: "Manufacturing",
+    subIndustry: "Auto Components",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 850000000,
+        operatingRevenue: 840000000,
+        grossProfit: 127500000,
+        operatingProfit: 42500000,
+        netProfit: 29750000,
+        operatingCost: 797500000,
+        totalCost: 820250000,
+        totalAssets: 510000000,
+        fixedAssets: 255000000,
+        currentAssets: 238000000,
+        currentLiabilities: 170000000,
+        inventory: 85000000,
+        receivables: 106250000,
+        payables: 70833333,
+        capitalEmployed: 340000000,
+        employeeCost: 127500000,
+        depreciation: 38250000,
+        relatedPartyTransactions: 17000000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 780000000,
+        operatingRevenue: 770000000,
+        grossProfit: 117000000,
+        operatingProfit: 35100000,
+        netProfit: 24570000,
+        operatingCost: 734900000,
+        totalCost: 755430000,
+        totalAssets: 468000000,
+        fixedAssets: 234000000,
+        currentAssets: 218000000,
+        currentLiabilities: 156000000,
+        inventory: 78000000,
+        receivables: 97500000,
+        payables: 65000000,
+        capitalEmployed: 312000000,
+        employeeCost: 117000000,
+        depreciation: 35100000,
+        relatedPartyTransactions: 15600000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 720000000,
+        operatingRevenue: 710000000,
+        grossProfit: 108000000,
+        operatingProfit: 28800000,
+        netProfit: 20160000,
+        operatingCost: 681200000,
+        totalCost: 699840000,
+        totalAssets: 432000000,
+        fixedAssets: 216000000,
+        currentAssets: 201000000,
+        currentLiabilities: 144000000,
+        inventory: 72000000,
+        receivables: 90000000,
+        payables: 60000000,
+        capitalEmployed: 288000000,
+        employeeCost: 108000000,
+        depreciation: 32400000,
+        relatedPartyTransactions: 14400000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 5.33, year: "2023-24" },
+      { pliType: "OP_OC", value: 4.78, year: "2022-23" },
+      { pliType: "OP_OC", value: 4.23, year: "2021-22" },
+      { pliType: "OP_OR", value: 5.06, year: "2023-24" },
+      { pliType: "OP_OR", value: 4.56, year: "2022-23" },
+      { pliType: "OP_OR", value: 4.06, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 91,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP014",
+    cin: "U29200GJ2009PTC098765",
+    name: "AutoParts Excellence Private Limited",
+    nicCode: "2930",
+    nicDescription: "Manufacture of parts and accessories for motor vehicles",
+    industry: "Manufacturing",
+    subIndustry: "Auto Components",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 1150000000,
+        operatingRevenue: 1140000000,
+        grossProfit: 184000000,
+        operatingProfit: 63250000,
+        netProfit: 44275000,
+        operatingCost: 1076750000,
+        totalCost: 1105725000,
+        totalAssets: 690000000,
+        fixedAssets: 345000000,
+        currentAssets: 322000000,
+        currentLiabilities: 230000000,
+        inventory: 115000000,
+        receivables: 143750000,
+        payables: 95833333,
+        capitalEmployed: 460000000,
+        employeeCost: 172500000,
+        depreciation: 51750000,
+        relatedPartyTransactions: 11500000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1050000000,
+        operatingRevenue: 1040000000,
+        grossProfit: 168000000,
+        operatingProfit: 55650000,
+        netProfit: 38955000,
+        operatingCost: 984350000,
+        totalCost: 1011045000,
+        totalAssets: 630000000,
+        fixedAssets: 315000000,
+        currentAssets: 294000000,
+        currentLiabilities: 210000000,
+        inventory: 105000000,
+        receivables: 131250000,
+        payables: 87500000,
+        capitalEmployed: 420000000,
+        employeeCost: 157500000,
+        depreciation: 47250000,
+        relatedPartyTransactions: 10500000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 960000000,
+        operatingRevenue: 950000000,
+        grossProfit: 153600000,
+        operatingProfit: 48000000,
+        netProfit: 33600000,
+        operatingCost: 902000000,
+        totalCost: 926400000,
+        totalAssets: 576000000,
+        fixedAssets: 288000000,
+        currentAssets: 268000000,
+        currentLiabilities: 192000000,
+        inventory: 96000000,
+        receivables: 120000000,
+        payables: 80000000,
+        capitalEmployed: 384000000,
+        employeeCost: 144000000,
+        depreciation: 43200000,
+        relatedPartyTransactions: 9600000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 5.87, year: "2023-24" },
+      { pliType: "OP_OC", value: 5.66, year: "2022-23" },
+      { pliType: "OP_OC", value: 5.32, year: "2021-22" },
+      { pliType: "OP_OR", value: 5.55, year: "2023-24" },
+      { pliType: "OP_OR", value: 5.35, year: "2022-23" },
+      { pliType: "OP_OR", value: 5.05, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 94,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP015",
+    cin: "U29300PN2008PTC109876",
+    name: "ComponentTech Manufacturing Private Limited",
+    nicCode: "2811",
+    nicDescription: "Manufacture of engines and turbines",
+    industry: "Manufacturing",
+    subIndustry: "Industrial Machinery",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 620000000,
+        operatingRevenue: 612000000,
+        grossProfit: 99200000,
+        operatingProfit: 34100000,
+        netProfit: 23870000,
+        operatingCost: 577900000,
+        totalCost: 596130000,
+        totalAssets: 372000000,
+        fixedAssets: 186000000,
+        currentAssets: 173000000,
+        currentLiabilities: 124000000,
+        inventory: 62000000,
+        receivables: 77500000,
+        payables: 51666667,
+        capitalEmployed: 248000000,
+        employeeCost: 93000000,
+        depreciation: 27900000,
+        relatedPartyTransactions: 18600000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2022-23",
+        revenue: 565000000,
+        operatingRevenue: 558000000,
+        grossProfit: 90400000,
+        operatingProfit: 29380000,
+        netProfit: 20566000,
+        operatingCost: 528620000,
+        totalCost: 544434000,
+        totalAssets: 339000000,
+        fixedAssets: 169500000,
+        currentAssets: 158000000,
+        currentLiabilities: 113000000,
+        inventory: 56500000,
+        receivables: 70625000,
+        payables: 47083333,
+        capitalEmployed: 226000000,
+        employeeCost: 84750000,
+        depreciation: 25425000,
+        relatedPartyTransactions: 16950000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2021-22",
+        revenue: 518000000,
+        operatingRevenue: 512000000,
+        grossProfit: 82880000,
+        operatingProfit: 25900000,
+        netProfit: 18130000,
+        operatingCost: 486100000,
+        totalCost: 499870000,
+        totalAssets: 311000000,
+        fixedAssets: 155500000,
+        currentAssets: 145000000,
+        currentLiabilities: 103600000,
+        inventory: 51800000,
+        receivables: 64750000,
+        payables: 43166667,
+        capitalEmployed: 207400000,
+        employeeCost: 77700000,
+        depreciation: 23310000,
+        relatedPartyTransactions: 15540000,
+        relatedPartyPercent: 3.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 5.90, year: "2023-24" },
+      { pliType: "OP_OC", value: 5.56, year: "2022-23" },
+      { pliType: "OP_OC", value: 5.33, year: "2021-22" },
+      { pliType: "OP_OR", value: 5.57, year: "2023-24" },
+      { pliType: "OP_OR", value: 5.27, year: "2022-23" },
+      { pliType: "OP_OR", value: 5.06, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 88,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 3.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP016",
+    cin: "U29400TN2010PTC110987",
+    name: "ElectroAssembly India Private Limited",
+    nicCode: "2710",
+    nicDescription: "Manufacture of electric motors, generators, transformers",
+    industry: "Manufacturing",
+    subIndustry: "Electrical Equipment",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 480000000,
+        operatingRevenue: 475000000,
+        grossProfit: 76800000,
+        operatingProfit: 26400000,
+        netProfit: 18480000,
+        operatingCost: 448600000,
+        totalCost: 461520000,
+        totalAssets: 288000000,
+        fixedAssets: 144000000,
+        currentAssets: 134000000,
+        currentLiabilities: 96000000,
+        inventory: 48000000,
+        receivables: 60000000,
+        payables: 40000000,
+        capitalEmployed: 192000000,
+        employeeCost: 72000000,
+        depreciation: 21600000,
+        relatedPartyTransactions: 4800000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 438000000,
+        operatingRevenue: 433000000,
+        grossProfit: 70080000,
+        operatingProfit: 23274000,
+        netProfit: 16292000,
+        operatingCost: 409726000,
+        totalCost: 421708000,
+        totalAssets: 263000000,
+        fixedAssets: 131500000,
+        currentAssets: 122000000,
+        currentLiabilities: 87600000,
+        inventory: 43800000,
+        receivables: 54750000,
+        payables: 36500000,
+        capitalEmployed: 175400000,
+        employeeCost: 65700000,
+        depreciation: 19710000,
+        relatedPartyTransactions: 4380000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 402000000,
+        operatingRevenue: 397000000,
+        grossProfit: 64320000,
+        operatingProfit: 20100000,
+        netProfit: 14070000,
+        operatingCost: 376900000,
+        totalCost: 387930000,
+        totalAssets: 241000000,
+        fixedAssets: 120500000,
+        currentAssets: 112000000,
+        currentLiabilities: 80400000,
+        inventory: 40200000,
+        receivables: 50250000,
+        payables: 33500000,
+        capitalEmployed: 160600000,
+        employeeCost: 60300000,
+        depreciation: 18090000,
+        relatedPartyTransactions: 4020000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 5.89, year: "2023-24" },
+      { pliType: "OP_OC", value: 5.68, year: "2022-23" },
+      { pliType: "OP_OC", value: 5.33, year: "2021-22" },
+      { pliType: "OP_OR", value: 5.56, year: "2023-24" },
+      { pliType: "OP_OR", value: 5.37, year: "2022-23" },
+      { pliType: "OP_OR", value: 5.06, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 89,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // PHARMACEUTICAL COMPANIES
+  // ==========================================================================
+  {
+    id: "COMP017",
+    cin: "U21001MH2005PTC121098",
+    name: "PharmaSynth Labs Private Limited",
+    nicCode: "2100",
+    nicDescription: "Manufacture of pharmaceuticals, medicinal chemicals",
+    industry: "Pharmaceuticals",
+    subIndustry: "API Manufacturing",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 920000000,
+        operatingRevenue: 910000000,
+        grossProfit: 276000000,
+        operatingProfit: 73600000,
+        netProfit: 51520000,
+        operatingCost: 836400000,
+        totalCost: 868480000,
+        totalAssets: 552000000,
+        fixedAssets: 276000000,
+        currentAssets: 257000000,
+        currentLiabilities: 184000000,
+        inventory: 92000000,
+        receivables: 115000000,
+        payables: 76666667,
+        capitalEmployed: 368000000,
+        employeeCost: 138000000,
+        depreciation: 41400000,
+        rndExpense: 46000000,
+        relatedPartyTransactions: 27600000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2022-23",
+        revenue: 840000000,
+        operatingRevenue: 830000000,
+        grossProfit: 252000000,
+        operatingProfit: 63000000,
+        netProfit: 44100000,
+        operatingCost: 767000000,
+        totalCost: 795900000,
+        totalAssets: 504000000,
+        fixedAssets: 252000000,
+        currentAssets: 235000000,
+        currentLiabilities: 168000000,
+        inventory: 84000000,
+        receivables: 105000000,
+        payables: 70000000,
+        capitalEmployed: 336000000,
+        employeeCost: 126000000,
+        depreciation: 37800000,
+        rndExpense: 42000000,
+        relatedPartyTransactions: 25200000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2021-22",
+        revenue: 770000000,
+        operatingRevenue: 760000000,
+        grossProfit: 231000000,
+        operatingProfit: 53900000,
+        netProfit: 37730000,
+        operatingCost: 706100000,
+        totalCost: 732270000,
+        totalAssets: 462000000,
+        fixedAssets: 231000000,
+        currentAssets: 215000000,
+        currentLiabilities: 154000000,
+        inventory: 77000000,
+        receivables: 96250000,
+        payables: 64166667,
+        capitalEmployed: 308000000,
+        employeeCost: 115500000,
+        depreciation: 34650000,
+        rndExpense: 38500000,
+        relatedPartyTransactions: 23100000,
+        relatedPartyPercent: 3.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 8.80, year: "2023-24" },
+      { pliType: "OP_OC", value: 8.22, year: "2022-23" },
+      { pliType: "OP_OC", value: 7.63, year: "2021-22" },
+      { pliType: "OP_OR", value: 8.09, year: "2023-24" },
+      { pliType: "OP_OR", value: 7.59, year: "2022-23" },
+      { pliType: "OP_OR", value: 7.09, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 92,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 3.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP018",
+    cin: "U21002GJ2007PTC132109",
+    name: "MedFormulation India Private Limited",
+    nicCode: "2100",
+    nicDescription: "Manufacture of pharmaceuticals, medicinal chemicals",
+    industry: "Pharmaceuticals",
+    subIndustry: "Formulations",
+    functionalProfile: "MANUFACTURER_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 680000000,
+        operatingRevenue: 672000000,
+        grossProfit: 204000000,
+        operatingProfit: 51000000,
+        netProfit: 35700000,
+        operatingCost: 621000000,
+        totalCost: 644300000,
+        totalAssets: 408000000,
+        fixedAssets: 204000000,
+        currentAssets: 190000000,
+        currentLiabilities: 136000000,
+        inventory: 68000000,
+        receivables: 85000000,
+        payables: 56666667,
+        capitalEmployed: 272000000,
+        employeeCost: 102000000,
+        depreciation: 30600000,
+        rndExpense: 27200000,
+        relatedPartyTransactions: 6800000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 620000000,
+        operatingRevenue: 612000000,
+        grossProfit: 186000000,
+        operatingProfit: 43400000,
+        netProfit: 30380000,
+        operatingCost: 568600000,
+        totalCost: 589620000,
+        totalAssets: 372000000,
+        fixedAssets: 186000000,
+        currentAssets: 173000000,
+        currentLiabilities: 124000000,
+        inventory: 62000000,
+        receivables: 77500000,
+        payables: 51666667,
+        capitalEmployed: 248000000,
+        employeeCost: 93000000,
+        depreciation: 27900000,
+        rndExpense: 24800000,
+        relatedPartyTransactions: 6200000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 568000000,
+        operatingRevenue: 560000000,
+        grossProfit: 170400000,
+        operatingProfit: 36920000,
+        netProfit: 25844000,
+        operatingCost: 523080000,
+        totalCost: 542156000,
+        totalAssets: 341000000,
+        fixedAssets: 170500000,
+        currentAssets: 159000000,
+        currentLiabilities: 113600000,
+        inventory: 56800000,
+        receivables: 71000000,
+        payables: 47333333,
+        capitalEmployed: 227400000,
+        employeeCost: 85200000,
+        depreciation: 25560000,
+        rndExpense: 22720000,
+        relatedPartyTransactions: 5680000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 8.21, year: "2023-24" },
+      { pliType: "OP_OC", value: 7.63, year: "2022-23" },
+      { pliType: "OP_OC", value: 7.06, year: "2021-22" },
+      { pliType: "OP_OR", value: 7.59, year: "2023-24" },
+      { pliType: "OP_OR", value: 7.09, year: "2022-23" },
+      { pliType: "OP_OR", value: 6.59, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 90,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP019",
+    cin: "U21003AP2008PTC143210",
+    name: "BioGenix Pharma Private Limited",
+    nicCode: "2100",
+    nicDescription: "Manufacture of pharmaceuticals, medicinal chemicals",
+    industry: "Pharmaceuticals",
+    subIndustry: "Contract Research",
+    functionalProfile: "R_AND_D_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 380000000,
+        operatingRevenue: 375000000,
+        grossProfit: 133000000,
+        operatingProfit: 49400000,
+        netProfit: 34580000,
+        operatingCost: 325600000,
+        totalCost: 345420000,
+        totalAssets: 228000000,
+        fixedAssets: 91200000,
+        currentAssets: 128000000,
+        currentLiabilities: 76000000,
+        inventory: 19000000,
+        receivables: 63333333,
+        payables: 31666667,
+        capitalEmployed: 152000000,
+        employeeCost: 152000000,
+        depreciation: 13680000,
+        rndExpense: 76000000,
+        relatedPartyTransactions: 11400000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2022-23",
+        revenue: 345000000,
+        operatingRevenue: 340000000,
+        grossProfit: 120750000,
+        operatingProfit: 42435000,
+        netProfit: 29705000,
+        operatingCost: 297565000,
+        totalCost: 315295000,
+        totalAssets: 207000000,
+        fixedAssets: 82800000,
+        currentAssets: 116000000,
+        currentLiabilities: 69000000,
+        inventory: 17250000,
+        receivables: 57500000,
+        payables: 28750000,
+        capitalEmployed: 138000000,
+        employeeCost: 138000000,
+        depreciation: 12420000,
+        rndExpense: 69000000,
+        relatedPartyTransactions: 10350000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2021-22",
+        revenue: 315000000,
+        operatingRevenue: 310000000,
+        grossProfit: 110250000,
+        operatingProfit: 36225000,
+        netProfit: 25358000,
+        operatingCost: 273775000,
+        totalCost: 289642000,
+        totalAssets: 189000000,
+        fixedAssets: 75600000,
+        currentAssets: 106000000,
+        currentLiabilities: 63000000,
+        inventory: 15750000,
+        receivables: 52500000,
+        payables: 26250000,
+        capitalEmployed: 126000000,
+        employeeCost: 126000000,
+        depreciation: 11340000,
+        rndExpense: 63000000,
+        relatedPartyTransactions: 9450000,
+        relatedPartyPercent: 3.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 15.17, year: "2023-24" },
+      { pliType: "OP_OC", value: 14.26, year: "2022-23" },
+      { pliType: "OP_OC", value: 13.23, year: "2021-22" },
+      { pliType: "OP_OR", value: 13.17, year: "2023-24" },
+      { pliType: "OP_OR", value: 12.48, year: "2022-23" },
+      { pliType: "OP_OR", value: 11.69, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 93,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 3.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // DISTRIBUTION COMPANIES
+  // ==========================================================================
+  {
+    id: "COMP020",
+    cin: "U51100DL2006PTC154321",
+    name: "TechDistrib India Private Limited",
+    nicCode: "4651",
+    nicDescription: "Wholesale of computers, computer peripheral equipment",
+    industry: "Distribution",
+    subIndustry: "IT Products Distribution",
+    functionalProfile: "DISTRIBUTOR_LIMITED_RISK",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 2200000000,
+        operatingRevenue: 2180000000,
+        grossProfit: 132000000,
+        operatingProfit: 33000000,
+        netProfit: 23100000,
+        operatingCost: 2147000000,
+        totalCost: 2176900000,
+        totalAssets: 660000000,
+        fixedAssets: 44000000,
+        currentAssets: 594000000,
+        currentLiabilities: 440000000,
+        inventory: 220000000,
+        receivables: 275000000,
+        payables: 183333333,
+        capitalEmployed: 220000000,
+        employeeCost: 44000000,
+        depreciation: 6600000,
+        relatedPartyTransactions: 22000000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1980000000,
+        operatingRevenue: 1960000000,
+        grossProfit: 118800000,
+        operatingProfit: 27720000,
+        netProfit: 19404000,
+        operatingCost: 1932280000,
+        totalCost: 1960596000,
+        totalAssets: 594000000,
+        fixedAssets: 39600000,
+        currentAssets: 534000000,
+        currentLiabilities: 396000000,
+        inventory: 198000000,
+        receivables: 247500000,
+        payables: 165000000,
+        capitalEmployed: 198000000,
+        employeeCost: 39600000,
+        depreciation: 5940000,
+        relatedPartyTransactions: 19800000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 1780000000,
+        operatingRevenue: 1760000000,
+        grossProfit: 106800000,
+        operatingProfit: 23140000,
+        netProfit: 16198000,
+        operatingCost: 1736860000,
+        totalCost: 1763802000,
+        totalAssets: 534000000,
+        fixedAssets: 35600000,
+        currentAssets: 480000000,
+        currentLiabilities: 356000000,
+        inventory: 178000000,
+        receivables: 222500000,
+        payables: 148333333,
+        capitalEmployed: 178000000,
+        employeeCost: 35600000,
+        depreciation: 5340000,
+        relatedPartyTransactions: 17800000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 1.54, year: "2023-24" },
+      { pliType: "OP_OC", value: 1.43, year: "2022-23" },
+      { pliType: "OP_OC", value: 1.33, year: "2021-22" },
+      { pliType: "GP_SALES", value: 6.06, year: "2023-24" },
+      { pliType: "GP_SALES", value: 6.06, year: "2022-23" },
+      { pliType: "GP_SALES", value: 6.07, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 91,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP021",
+    cin: "U51200MH2009PTC165432",
+    name: "MedSupply Distribution Private Limited",
+    nicCode: "4645",
+    nicDescription: "Wholesale of pharmaceutical and medical goods",
+    industry: "Distribution",
+    subIndustry: "Pharma Distribution",
+    functionalProfile: "DISTRIBUTOR_LIMITED_RISK",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 1450000000,
+        operatingRevenue: 1435000000,
+        grossProfit: 101500000,
+        operatingProfit: 26100000,
+        netProfit: 18270000,
+        operatingCost: 1408900000,
+        totalCost: 1431730000,
+        totalAssets: 435000000,
+        fixedAssets: 29000000,
+        currentAssets: 391000000,
+        currentLiabilities: 290000000,
+        inventory: 145000000,
+        receivables: 181250000,
+        payables: 120833333,
+        capitalEmployed: 145000000,
+        employeeCost: 29000000,
+        depreciation: 4350000,
+        relatedPartyTransactions: 14500000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1320000000,
+        operatingRevenue: 1305000000,
+        grossProfit: 92400000,
+        operatingProfit: 22440000,
+        netProfit: 15708000,
+        operatingCost: 1282560000,
+        totalCost: 1304292000,
+        totalAssets: 396000000,
+        fixedAssets: 26400000,
+        currentAssets: 356000000,
+        currentLiabilities: 264000000,
+        inventory: 132000000,
+        receivables: 165000000,
+        payables: 110000000,
+        capitalEmployed: 132000000,
+        employeeCost: 26400000,
+        depreciation: 3960000,
+        relatedPartyTransactions: 13200000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 1200000000,
+        operatingRevenue: 1185000000,
+        grossProfit: 84000000,
+        operatingProfit: 19200000,
+        netProfit: 13440000,
+        operatingCost: 1165800000,
+        totalCost: 1186560000,
+        totalAssets: 360000000,
+        fixedAssets: 24000000,
+        currentAssets: 324000000,
+        currentLiabilities: 240000000,
+        inventory: 120000000,
+        receivables: 150000000,
+        payables: 100000000,
+        capitalEmployed: 120000000,
+        employeeCost: 24000000,
+        depreciation: 3600000,
+        relatedPartyTransactions: 12000000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 1.85, year: "2023-24" },
+      { pliType: "OP_OC", value: 1.75, year: "2022-23" },
+      { pliType: "OP_OC", value: 1.65, year: "2021-22" },
+      { pliType: "GP_SALES", value: 7.07, year: "2023-24" },
+      { pliType: "GP_SALES", value: 7.08, year: "2022-23" },
+      { pliType: "GP_SALES", value: 7.08, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 89,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP022",
+    cin: "U51300KA2010PTC176543",
+    name: "AutoParts Wholesale Private Limited",
+    nicCode: "4530",
+    nicDescription: "Sale of motor vehicle parts and accessories",
+    industry: "Distribution",
+    subIndustry: "Auto Parts Distribution",
+    functionalProfile: "DISTRIBUTOR_FULL_FLEDGED",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 780000000,
+        operatingRevenue: 770000000,
+        grossProfit: 93600000,
+        operatingProfit: 27300000,
+        netProfit: 19110000,
+        operatingCost: 742700000,
+        totalCost: 760890000,
+        totalAssets: 312000000,
+        fixedAssets: 31200000,
+        currentAssets: 265000000,
+        currentLiabilities: 156000000,
+        inventory: 117000000,
+        receivables: 97500000,
+        payables: 65000000,
+        capitalEmployed: 156000000,
+        employeeCost: 31200000,
+        depreciation: 4680000,
+        relatedPartyTransactions: 23400000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2022-23",
+        revenue: 710000000,
+        operatingRevenue: 700000000,
+        grossProfit: 85200000,
+        operatingProfit: 23430000,
+        netProfit: 16401000,
+        operatingCost: 676570000,
+        totalCost: 693599000,
+        totalAssets: 284000000,
+        fixedAssets: 28400000,
+        currentAssets: 241000000,
+        currentLiabilities: 142000000,
+        inventory: 106500000,
+        receivables: 88750000,
+        payables: 59166667,
+        capitalEmployed: 142000000,
+        employeeCost: 28400000,
+        depreciation: 4260000,
+        relatedPartyTransactions: 21300000,
+        relatedPartyPercent: 3.0
+      },
+      {
+        year: "2021-22",
+        revenue: 650000000,
+        operatingRevenue: 640000000,
+        grossProfit: 78000000,
+        operatingProfit: 20150000,
+        netProfit: 14105000,
+        operatingCost: 619850000,
+        totalCost: 635895000,
+        totalAssets: 260000000,
+        fixedAssets: 26000000,
+        currentAssets: 221000000,
+        currentLiabilities: 130000000,
+        inventory: 97500000,
+        receivables: 81250000,
+        payables: 54166667,
+        capitalEmployed: 130000000,
+        employeeCost: 26000000,
+        depreciation: 3900000,
+        relatedPartyTransactions: 19500000,
+        relatedPartyPercent: 3.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 3.68, year: "2023-24" },
+      { pliType: "OP_OC", value: 3.46, year: "2022-23" },
+      { pliType: "OP_OC", value: 3.25, year: "2021-22" },
+      { pliType: "GP_SALES", value: 12.16, year: "2023-24" },
+      { pliType: "GP_SALES", value: 12.17, year: "2022-23" },
+      { pliType: "GP_SALES", value: 12.19, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 87,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 3.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // R&D / ENGINEERING SERVICES COMPANIES
+  // ==========================================================================
+  {
+    id: "COMP023",
+    cin: "U72100KA2007PTC187654",
+    name: "EngiDesign Services Private Limited",
+    nicCode: "7112",
+    nicDescription: "Engineering activities and related technical consultancy",
+    industry: "Engineering Services",
+    subIndustry: "Product Design",
+    functionalProfile: "R_AND_D_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 340000000,
+        operatingRevenue: 335000000,
+        grossProfit: 119000000,
+        operatingProfit: 47600000,
+        netProfit: 33320000,
+        operatingCost: 287400000,
+        totalCost: 306680000,
+        totalAssets: 204000000,
+        fixedAssets: 40800000,
+        currentAssets: 153000000,
+        currentLiabilities: 68000000,
+        inventory: 0,
+        receivables: 56666667,
+        payables: 28333333,
+        capitalEmployed: 136000000,
+        employeeCost: 204000000,
+        depreciation: 10200000,
+        rndExpense: 17000000,
+        relatedPartyTransactions: 3400000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 308000000,
+        operatingRevenue: 303000000,
+        grossProfit: 107800000,
+        operatingProfit: 41580000,
+        netProfit: 29106000,
+        operatingCost: 261420000,
+        totalCost: 278894000,
+        totalAssets: 185000000,
+        fixedAssets: 37000000,
+        currentAssets: 138000000,
+        currentLiabilities: 61600000,
+        inventory: 0,
+        receivables: 51333333,
+        payables: 25666667,
+        capitalEmployed: 123400000,
+        employeeCost: 184800000,
+        depreciation: 9240000,
+        rndExpense: 15400000,
+        relatedPartyTransactions: 3080000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 280000000,
+        operatingRevenue: 275000000,
+        grossProfit: 98000000,
+        operatingProfit: 36400000,
+        netProfit: 25480000,
+        operatingCost: 238600000,
+        totalCost: 254520000,
+        totalAssets: 168000000,
+        fixedAssets: 33600000,
+        currentAssets: 126000000,
+        currentLiabilities: 56000000,
+        inventory: 0,
+        receivables: 46666667,
+        payables: 23333333,
+        capitalEmployed: 112000000,
+        employeeCost: 168000000,
+        depreciation: 8400000,
+        rndExpense: 14000000,
+        relatedPartyTransactions: 2800000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 16.56, year: "2023-24" },
+      { pliType: "OP_OC", value: 15.91, year: "2022-23" },
+      { pliType: "OP_OC", value: 15.26, year: "2021-22" },
+      { pliType: "OP_OR", value: 14.21, year: "2023-24" },
+      { pliType: "OP_OR", value: 13.72, year: "2022-23" },
+      { pliType: "OP_OR", value: 13.24, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 94,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP024",
+    cin: "U72200PN2009PTC198765",
+    name: "AutoCAD Solutions Private Limited",
+    nicCode: "7112",
+    nicDescription: "Engineering activities and related technical consultancy",
+    industry: "Engineering Services",
+    subIndustry: "CAD/CAM Services",
+    functionalProfile: "R_AND_D_CONTRACT",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 245000000,
+        operatingRevenue: 241000000,
+        grossProfit: 85750000,
+        operatingProfit: 33075000,
+        netProfit: 23153000,
+        operatingCost: 207925000,
+        totalCost: 221847000,
+        totalAssets: 147000000,
+        fixedAssets: 24500000,
+        currentAssets: 115000000,
+        currentLiabilities: 49000000,
+        inventory: 0,
+        receivables: 40833333,
+        payables: 20416667,
+        capitalEmployed: 98000000,
+        employeeCost: 147000000,
+        depreciation: 7350000,
+        rndExpense: 12250000,
+        relatedPartyTransactions: 4900000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 222000000,
+        operatingRevenue: 218000000,
+        grossProfit: 77700000,
+        operatingProfit: 28860000,
+        netProfit: 20202000,
+        operatingCost: 189140000,
+        totalCost: 201798000,
+        totalAssets: 133000000,
+        fixedAssets: 22200000,
+        currentAssets: 104000000,
+        currentLiabilities: 44400000,
+        inventory: 0,
+        receivables: 37000000,
+        payables: 18500000,
+        capitalEmployed: 88600000,
+        employeeCost: 133200000,
+        depreciation: 6660000,
+        rndExpense: 11100000,
+        relatedPartyTransactions: 4440000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 202000000,
+        operatingRevenue: 198000000,
+        grossProfit: 70700000,
+        operatingProfit: 25250000,
+        netProfit: 17675000,
+        operatingCost: 172750000,
+        totalCost: 184325000,
+        totalAssets: 121000000,
+        fixedAssets: 20200000,
+        currentAssets: 95000000,
+        currentLiabilities: 40400000,
+        inventory: 0,
+        receivables: 33666667,
+        payables: 16833333,
+        capitalEmployed: 80600000,
+        employeeCost: 121200000,
+        depreciation: 6060000,
+        rndExpense: 10100000,
+        relatedPartyTransactions: 4040000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 15.91, year: "2023-24" },
+      { pliType: "OP_OC", value: 15.26, year: "2022-23" },
+      { pliType: "OP_OC", value: 14.62, year: "2021-22" },
+      { pliType: "OP_OR", value: 13.72, year: "2023-24" },
+      { pliType: "OP_OR", value: 13.24, year: "2022-23" },
+      { pliType: "OP_OR", value: 12.75, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 91,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // ADDITIONAL IT SERVICES FOR DIVERSITY
+  // ==========================================================================
+  {
+    id: "COMP025",
+    cin: "U72300HR2012PTC209876",
+    name: "CloudMigrate Solutions Private Limited",
+    nicCode: "6209",
+    nicDescription: "Other information technology and computer service activities",
+    industry: "Information Technology",
+    subIndustry: "Cloud Services",
+    functionalProfile: "IT_SERVICES",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 520000000,
+        operatingRevenue: 515000000,
+        grossProfit: 161200000,
+        operatingProfit: 72800000,
+        netProfit: 50960000,
+        operatingCost: 442200000,
+        totalCost: 469040000,
+        totalAssets: 312000000,
+        fixedAssets: 52000000,
+        currentAssets: 243000000,
+        currentLiabilities: 104000000,
+        inventory: 0,
+        receivables: 86666667,
+        payables: 43333333,
+        capitalEmployed: 208000000,
+        employeeCost: 312000000,
+        depreciation: 15600000,
+        relatedPartyTransactions: 5200000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 468000000,
+        operatingRevenue: 463000000,
+        grossProfit: 145080000,
+        operatingProfit: 63180000,
+        netProfit: 44226000,
+        operatingCost: 399820000,
+        totalCost: 423774000,
+        totalAssets: 281000000,
+        fixedAssets: 46800000,
+        currentAssets: 218000000,
+        currentLiabilities: 93600000,
+        inventory: 0,
+        receivables: 78000000,
+        payables: 39000000,
+        capitalEmployed: 187400000,
+        employeeCost: 280800000,
+        depreciation: 14040000,
+        relatedPartyTransactions: 4680000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 420000000,
+        operatingRevenue: 415000000,
+        grossProfit: 130200000,
+        operatingProfit: 54600000,
+        netProfit: 38220000,
+        operatingCost: 360400000,
+        totalCost: 381780000,
+        totalAssets: 252000000,
+        fixedAssets: 42000000,
+        currentAssets: 196000000,
+        currentLiabilities: 84000000,
+        inventory: 0,
+        receivables: 70000000,
+        payables: 35000000,
+        capitalEmployed: 168000000,
+        employeeCost: 252000000,
+        depreciation: 12600000,
+        relatedPartyTransactions: 4200000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 16.47, year: "2023-24" },
+      { pliType: "OP_OC", value: 15.80, year: "2022-23" },
+      { pliType: "OP_OC", value: 15.15, year: "2021-22" },
+      { pliType: "OP_OR", value: 14.14, year: "2023-24" },
+      { pliType: "OP_OR", value: 13.65, year: "2022-23" },
+      { pliType: "OP_OR", value: 13.16, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 93,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP026",
+    cin: "U72400TG2011PTC210987",
+    name: "CyberSecure Tech Private Limited",
+    nicCode: "6209",
+    nicDescription: "Other information technology and computer service activities",
+    industry: "Information Technology",
+    subIndustry: "Cybersecurity Services",
+    functionalProfile: "IT_SERVICES",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 385000000,
+        operatingRevenue: 380000000,
+        grossProfit: 134750000,
+        operatingProfit: 57750000,
+        netProfit: 40425000,
+        operatingCost: 322250000,
+        totalCost: 344575000,
+        totalAssets: 231000000,
+        fixedAssets: 38500000,
+        currentAssets: 180000000,
+        currentLiabilities: 77000000,
+        inventory: 0,
+        receivables: 64166667,
+        payables: 32083333,
+        capitalEmployed: 154000000,
+        employeeCost: 231000000,
+        depreciation: 11550000,
+        relatedPartyTransactions: 7700000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 348000000,
+        operatingRevenue: 343000000,
+        grossProfit: 121800000,
+        operatingProfit: 50460000,
+        netProfit: 35322000,
+        operatingCost: 292540000,
+        totalCost: 312678000,
+        totalAssets: 209000000,
+        fixedAssets: 34800000,
+        currentAssets: 163000000,
+        currentLiabilities: 69600000,
+        inventory: 0,
+        receivables: 58000000,
+        payables: 29000000,
+        capitalEmployed: 139400000,
+        employeeCost: 208800000,
+        depreciation: 10440000,
+        relatedPartyTransactions: 6960000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 315000000,
+        operatingRevenue: 310000000,
+        grossProfit: 110250000,
+        operatingProfit: 44100000,
+        netProfit: 30870000,
+        operatingCost: 265900000,
+        totalCost: 284130000,
+        totalAssets: 189000000,
+        fixedAssets: 31500000,
+        currentAssets: 147000000,
+        currentLiabilities: 63000000,
+        inventory: 0,
+        receivables: 52500000,
+        payables: 26250000,
+        capitalEmployed: 126000000,
+        employeeCost: 189000000,
+        depreciation: 9450000,
+        relatedPartyTransactions: 6300000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 17.92, year: "2023-24" },
+      { pliType: "OP_OC", value: 17.25, year: "2022-23" },
+      { pliType: "OP_OC", value: 16.59, year: "2021-22" },
+      { pliType: "OP_OR", value: 15.20, year: "2023-24" },
+      { pliType: "OP_OR", value: 14.71, year: "2022-23" },
+      { pliType: "OP_OR", value: 14.23, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 92,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // TOLL MANUFACTURING (LOW MARGIN)
+  // ==========================================================================
+  {
+    id: "COMP027",
+    cin: "U24100MH2008PTC221098",
+    name: "ChemProcess Industries Private Limited",
+    nicCode: "2011",
+    nicDescription: "Manufacture of basic chemicals",
+    industry: "Manufacturing",
+    subIndustry: "Chemical Processing",
+    functionalProfile: "MANUFACTURER_TOLL",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 1580000000,
+        operatingRevenue: 1565000000,
+        grossProfit: 110600000,
+        operatingProfit: 39500000,
+        netProfit: 27650000,
+        operatingCost: 1525500000,
+        totalCost: 1552350000,
+        totalAssets: 948000000,
+        fixedAssets: 474000000,
+        currentAssets: 443000000,
+        currentLiabilities: 316000000,
+        inventory: 158000000,
+        receivables: 197500000,
+        payables: 131666667,
+        capitalEmployed: 632000000,
+        employeeCost: 110600000,
+        depreciation: 71100000,
+        relatedPartyTransactions: 15800000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1440000000,
+        operatingRevenue: 1425000000,
+        grossProfit: 100800000,
+        operatingProfit: 34560000,
+        netProfit: 24192000,
+        operatingCost: 1390440000,
+        totalCost: 1415808000,
+        totalAssets: 864000000,
+        fixedAssets: 432000000,
+        currentAssets: 404000000,
+        currentLiabilities: 288000000,
+        inventory: 144000000,
+        receivables: 180000000,
+        payables: 120000000,
+        capitalEmployed: 576000000,
+        employeeCost: 100800000,
+        depreciation: 64800000,
+        relatedPartyTransactions: 14400000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 1320000000,
+        operatingRevenue: 1305000000,
+        grossProfit: 92400000,
+        operatingProfit: 29700000,
+        netProfit: 20790000,
+        operatingCost: 1275300000,
+        totalCost: 1299210000,
+        totalAssets: 792000000,
+        fixedAssets: 396000000,
+        currentAssets: 370000000,
+        currentLiabilities: 264000000,
+        inventory: 132000000,
+        receivables: 165000000,
+        payables: 110000000,
+        capitalEmployed: 528000000,
+        employeeCost: 92400000,
+        depreciation: 59400000,
+        relatedPartyTransactions: 13200000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 2.59, year: "2023-24" },
+      { pliType: "OP_OC", value: 2.49, year: "2022-23" },
+      { pliType: "OP_OC", value: 2.33, year: "2021-22" },
+      { pliType: "OP_OR", value: 2.52, year: "2023-24" },
+      { pliType: "OP_OR", value: 2.43, year: "2022-23" },
+      { pliType: "OP_OR", value: 2.27, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 90,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP028",
+    cin: "U24200GJ2009PTC232109",
+    name: "PetroChem Processors Private Limited",
+    nicCode: "2012",
+    nicDescription: "Manufacture of fertilizers and nitrogen compounds",
+    industry: "Manufacturing",
+    subIndustry: "Petrochemical Processing",
+    functionalProfile: "MANUFACTURER_TOLL",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 2100000000,
+        operatingRevenue: 2080000000,
+        grossProfit: 126000000,
+        operatingProfit: 46200000,
+        netProfit: 32340000,
+        operatingCost: 2033800000,
+        totalCost: 2067660000,
+        totalAssets: 1260000000,
+        fixedAssets: 630000000,
+        currentAssets: 588000000,
+        currentLiabilities: 420000000,
+        inventory: 210000000,
+        receivables: 262500000,
+        payables: 175000000,
+        capitalEmployed: 840000000,
+        employeeCost: 126000000,
+        depreciation: 94500000,
+        relatedPartyTransactions: 42000000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2022-23",
+        revenue: 1920000000,
+        operatingRevenue: 1900000000,
+        grossProfit: 115200000,
+        operatingProfit: 40320000,
+        netProfit: 28224000,
+        operatingCost: 1859680000,
+        totalCost: 1891776000,
+        totalAssets: 1152000000,
+        fixedAssets: 576000000,
+        currentAssets: 538000000,
+        currentLiabilities: 384000000,
+        inventory: 192000000,
+        receivables: 240000000,
+        payables: 160000000,
+        capitalEmployed: 768000000,
+        employeeCost: 115200000,
+        depreciation: 86400000,
+        relatedPartyTransactions: 38400000,
+        relatedPartyPercent: 2.0
+      },
+      {
+        year: "2021-22",
+        revenue: 1760000000,
+        operatingRevenue: 1740000000,
+        grossProfit: 105600000,
+        operatingProfit: 35200000,
+        netProfit: 24640000,
+        operatingCost: 1704800000,
+        totalCost: 1735360000,
+        totalAssets: 1056000000,
+        fixedAssets: 528000000,
+        currentAssets: 493000000,
+        currentLiabilities: 352000000,
+        inventory: 176000000,
+        receivables: 220000000,
+        payables: 146666667,
+        capitalEmployed: 704000000,
+        employeeCost: 105600000,
+        depreciation: 79200000,
+        relatedPartyTransactions: 35200000,
+        relatedPartyPercent: 2.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 2.27, year: "2023-24" },
+      { pliType: "OP_OC", value: 2.17, year: "2022-23" },
+      { pliType: "OP_OC", value: 2.07, year: "2021-22" },
+      { pliType: "OP_OR", value: 2.22, year: "2023-24" },
+      { pliType: "OP_OR", value: 2.12, year: "2022-23" },
+      { pliType: "OP_OR", value: 2.02, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 88,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 2.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+
+  // ==========================================================================
+  // SERVICE PROVIDERS (FULL-FLEDGED)
+  // ==========================================================================
+  {
+    id: "COMP029",
+    cin: "U74900DL2010PTC243210",
+    name: "StrategyFirst Consulting Private Limited",
+    nicCode: "7020",
+    nicDescription: "Management consultancy activities",
+    industry: "Professional Services",
+    subIndustry: "Management Consulting",
+    functionalProfile: "SERVICE_PROVIDER_FULL",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 290000000,
+        operatingRevenue: 286000000,
+        grossProfit: 130500000,
+        operatingProfit: 58000000,
+        netProfit: 40600000,
+        operatingCost: 228000000,
+        totalCost: 249400000,
+        totalAssets: 174000000,
+        fixedAssets: 17400000,
+        currentAssets: 148000000,
+        currentLiabilities: 58000000,
+        inventory: 0,
+        receivables: 48333333,
+        payables: 24166667,
+        capitalEmployed: 116000000,
+        employeeCost: 174000000,
+        depreciation: 5220000,
+        relatedPartyTransactions: 2900000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 262000000,
+        operatingRevenue: 258000000,
+        grossProfit: 117900000,
+        operatingProfit: 50150000,
+        netProfit: 35105000,
+        operatingCost: 207850000,
+        totalCost: 226895000,
+        totalAssets: 157000000,
+        fixedAssets: 15700000,
+        currentAssets: 134000000,
+        currentLiabilities: 52400000,
+        inventory: 0,
+        receivables: 43666667,
+        payables: 21833333,
+        capitalEmployed: 104600000,
+        employeeCost: 157200000,
+        depreciation: 4710000,
+        relatedPartyTransactions: 2620000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 238000000,
+        operatingRevenue: 234000000,
+        grossProfit: 107100000,
+        operatingProfit: 43435000,
+        netProfit: 30405000,
+        operatingCost: 190565000,
+        totalCost: 207595000,
+        totalAssets: 143000000,
+        fixedAssets: 14300000,
+        currentAssets: 121000000,
+        currentLiabilities: 47600000,
+        inventory: 0,
+        receivables: 39666667,
+        payables: 19833333,
+        capitalEmployed: 95400000,
+        employeeCost: 142800000,
+        depreciation: 4284000,
+        relatedPartyTransactions: 2380000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 25.44, year: "2023-24" },
+      { pliType: "OP_OC", value: 24.13, year: "2022-23" },
+      { pliType: "OP_OC", value: 22.79, year: "2021-22" },
+      { pliType: "OP_OR", value: 20.28, year: "2023-24" },
+      { pliType: "OP_OR", value: 19.44, year: "2022-23" },
+      { pliType: "OP_OR", value: 18.56, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 95,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
+  },
+  {
+    id: "COMP030",
+    cin: "U74100MH2011PTC254321",
+    name: "LegalServe Associates Private Limited",
+    nicCode: "6910",
+    nicDescription: "Legal activities",
+    industry: "Professional Services",
+    subIndustry: "Legal Services",
+    functionalProfile: "SERVICE_PROVIDER_FULL",
+    financials: [
+      {
+        year: "2023-24",
+        revenue: 180000000,
+        operatingRevenue: 177000000,
+        grossProfit: 90000000,
+        operatingProfit: 39600000,
+        netProfit: 27720000,
+        operatingCost: 137400000,
+        totalCost: 152280000,
+        totalAssets: 108000000,
+        fixedAssets: 10800000,
+        currentAssets: 91000000,
+        currentLiabilities: 36000000,
+        inventory: 0,
+        receivables: 30000000,
+        payables: 15000000,
+        capitalEmployed: 72000000,
+        employeeCost: 108000000,
+        depreciation: 3240000,
+        relatedPartyTransactions: 1800000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2022-23",
+        revenue: 163000000,
+        operatingRevenue: 160000000,
+        grossProfit: 81500000,
+        operatingProfit: 34235000,
+        netProfit: 23965000,
+        operatingCost: 125765000,
+        totalCost: 139035000,
+        totalAssets: 98000000,
+        fixedAssets: 9800000,
+        currentAssets: 82000000,
+        currentLiabilities: 32600000,
+        inventory: 0,
+        receivables: 27166667,
+        payables: 13583333,
+        capitalEmployed: 65400000,
+        employeeCost: 97800000,
+        depreciation: 2934000,
+        relatedPartyTransactions: 1630000,
+        relatedPartyPercent: 1.0
+      },
+      {
+        year: "2021-22",
+        revenue: 148000000,
+        operatingRevenue: 145000000,
+        grossProfit: 74000000,
+        operatingProfit: 29600000,
+        netProfit: 20720000,
+        operatingCost: 115400000,
+        totalCost: 127280000,
+        totalAssets: 89000000,
+        fixedAssets: 8900000,
+        currentAssets: 75000000,
+        currentLiabilities: 29600000,
+        inventory: 0,
+        receivables: 24666667,
+        payables: 12333333,
+        capitalEmployed: 59400000,
+        employeeCost: 88800000,
+        depreciation: 2664000,
+        relatedPartyTransactions: 1480000,
+        relatedPartyPercent: 1.0
+      }
+    ],
+    plis: [
+      { pliType: "OP_OC", value: 28.82, year: "2023-24" },
+      { pliType: "OP_OC", value: 27.22, year: "2022-23" },
+      { pliType: "OP_OC", value: 25.65, year: "2021-22" },
+      { pliType: "OP_OR", value: 22.37, year: "2023-24" },
+      { pliType: "OP_OR", value: 21.40, year: "2022-23" },
+      { pliType: "OP_OR", value: 20.41, year: "2021-22" }
+    ],
+    status: "ACTIVE",
+    source: "INTERNAL",
+    dataQualityScore: 91,
+    yearsOfData: 3,
+    hasRelatedPartyTransactions: true,
+    relatedPartyPercent: 1.0,
+    hasPersistentLosses: false,
+    lossYears: 0,
+    hasExtraordinaryItems: false,
+    isAccepted: true
   }
 ];
+
+// =============================================================================
+// INDUSTRY BENCHMARKS DATABASE
+// =============================================================================
+
+export const INDUSTRY_BENCHMARKS: Record<string, {
+  industry: string;
+  functionalProfiles: FunctionalProfile[];
+  opOcRange: { min: number; q1: number; median: number; q3: number; max: number };
+  opOrRange: { min: number; q1: number; median: number; q3: number; max: number };
+  typicalRptPercent: number;
+  typicalEmployeeCostRatio: number;
+}> = {
+  "IT_SERVICES": {
+    industry: "Information Technology",
+    functionalProfiles: ["IT_SERVICES", "SERVICE_PROVIDER_FULL", "SERVICE_PROVIDER_CONTRACT"],
+    opOcRange: { min: 10.0, q1: 12.5, median: 15.0, q3: 17.5, max: 22.0 },
+    opOrRange: { min: 9.0, q1: 11.0, median: 13.0, q3: 15.0, max: 18.0 },
+    typicalRptPercent: 2.0,
+    typicalEmployeeCostRatio: 55.0
+  },
+  "ITES_BPO": {
+    industry: "ITES/BPO",
+    functionalProfiles: ["ITES_BPO", "KPO", "SERVICE_PROVIDER_CONTRACT"],
+    opOcRange: { min: 8.0, q1: 11.0, median: 13.0, q3: 16.0, max: 20.0 },
+    opOrRange: { min: 7.0, q1: 10.0, median: 12.0, q3: 14.0, max: 17.0 },
+    typicalRptPercent: 2.5,
+    typicalEmployeeCostRatio: 60.0
+  },
+  "CONTRACT_MANUFACTURING": {
+    industry: "Manufacturing",
+    functionalProfiles: ["MANUFACTURER_CONTRACT", "MANUFACTURER_TOLL"],
+    opOcRange: { min: 2.0, q1: 4.0, median: 5.5, q3: 7.0, max: 10.0 },
+    opOrRange: { min: 2.0, q1: 3.5, median: 5.0, q3: 6.5, max: 9.0 },
+    typicalRptPercent: 3.0,
+    typicalEmployeeCostRatio: 15.0
+  },
+  "TOLL_MANUFACTURING": {
+    industry: "Manufacturing",
+    functionalProfiles: ["MANUFACTURER_TOLL"],
+    opOcRange: { min: 1.5, q1: 2.0, median: 2.5, q3: 3.5, max: 5.0 },
+    opOrRange: { min: 1.5, q1: 2.0, median: 2.5, q3: 3.0, max: 4.5 },
+    typicalRptPercent: 2.0,
+    typicalEmployeeCostRatio: 8.0
+  },
+  "PHARMACEUTICALS": {
+    industry: "Pharmaceuticals",
+    functionalProfiles: ["MANUFACTURER_CONTRACT", "R_AND_D_CONTRACT", "R_AND_D_FULL"],
+    opOcRange: { min: 5.0, q1: 7.0, median: 8.5, q3: 12.0, max: 18.0 },
+    opOrRange: { min: 4.5, q1: 6.5, median: 8.0, q3: 11.0, max: 16.0 },
+    typicalRptPercent: 3.0,
+    typicalEmployeeCostRatio: 18.0
+  },
+  "DISTRIBUTION": {
+    industry: "Distribution",
+    functionalProfiles: ["DISTRIBUTOR_LIMITED_RISK", "DISTRIBUTOR_FULL_FLEDGED", "DISTRIBUTOR_COMMISSIONAIRE"],
+    opOcRange: { min: 1.0, q1: 1.5, median: 2.5, q3: 3.5, max: 5.0 },
+    opOrRange: { min: 1.0, q1: 1.5, median: 2.0, q3: 3.0, max: 4.5 },
+    typicalRptPercent: 1.5,
+    typicalEmployeeCostRatio: 3.0
+  },
+  "R_AND_D_SERVICES": {
+    industry: "R&D Services",
+    functionalProfiles: ["R_AND_D_CONTRACT", "R_AND_D_FULL"],
+    opOcRange: { min: 10.0, q1: 13.0, median: 15.5, q3: 18.0, max: 25.0 },
+    opOrRange: { min: 9.0, q1: 12.0, median: 14.0, q3: 16.0, max: 20.0 },
+    typicalRptPercent: 2.0,
+    typicalEmployeeCostRatio: 60.0
+  },
+  "PROFESSIONAL_SERVICES": {
+    industry: "Professional Services",
+    functionalProfiles: ["SERVICE_PROVIDER_FULL"],
+    opOcRange: { min: 15.0, q1: 20.0, median: 25.0, q3: 30.0, max: 40.0 },
+    opOrRange: { min: 12.0, q1: 17.0, median: 20.0, q3: 24.0, max: 30.0 },
+    typicalRptPercent: 1.0,
+    typicalEmployeeCostRatio: 65.0
+  }
+};
 
 // =============================================================================
 // STATISTICAL UTILITY FUNCTIONS
@@ -2392,6 +4629,277 @@ export class ComparableSearchEngine {
         prowess: "API integration planned - Coming Soon",
         capitaline: "API integration planned - Coming Soon"
       }
+    };
+  }
+
+  /**
+   * Get companies by industry
+   */
+  getCompaniesByIndustry(industry: string): ComparableCompany[] {
+    return this.companies.filter(c =>
+      c.industry.toLowerCase().includes(industry.toLowerCase()) ||
+      c.subIndustry.toLowerCase().includes(industry.toLowerCase())
+    );
+  }
+
+  /**
+   * Get industry benchmark data
+   */
+  getIndustryBenchmark(industryKey: string): typeof INDUSTRY_BENCHMARKS[keyof typeof INDUSTRY_BENCHMARKS] | null {
+    return INDUSTRY_BENCHMARKS[industryKey] || null;
+  }
+
+  /**
+   * Get all industry benchmarks
+   */
+  getAllIndustryBenchmarks(): typeof INDUSTRY_BENCHMARKS {
+    return INDUSTRY_BENCHMARKS;
+  }
+
+  /**
+   * Search by text (name, description, NIC code)
+   */
+  searchByText(query: string, limit: number = 20): ComparableCompany[] {
+    const queryLower = query.toLowerCase();
+    return this.companies
+      .filter(c =>
+        c.name.toLowerCase().includes(queryLower) ||
+        c.nicDescription.toLowerCase().includes(queryLower) ||
+        c.nicCode.includes(query) ||
+        c.industry.toLowerCase().includes(queryLower) ||
+        c.subIndustry.toLowerCase().includes(queryLower)
+      )
+      .slice(0, limit);
+  }
+
+  /**
+   * Get PLI statistics for a set of companies
+   */
+  getPLIStatistics(companies: ComparableCompany[], pliType: PLIType, year?: string): {
+    count: number;
+    values: number[];
+    min: number;
+    max: number;
+    mean: number;
+    median: number;
+    q1: number;
+    q3: number;
+    stdDev: number;
+  } {
+    const values = companies
+      .flatMap(c => c.plis)
+      .filter(p => p.pliType === pliType && (!year || p.year === year))
+      .map(p => p.value)
+      .sort((a, b) => a - b);
+
+    if (values.length === 0) {
+      return { count: 0, values: [], min: 0, max: 0, mean: 0, median: 0, q1: 0, q3: 0, stdDev: 0 };
+    }
+
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    const median = values[Math.floor(values.length / 2)];
+    const q1 = values[Math.floor(values.length * 0.25)];
+    const q3 = values[Math.floor(values.length * 0.75)];
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+
+    return {
+      count: values.length,
+      values,
+      min: values[0],
+      max: values[values.length - 1],
+      mean: Math.round(mean * 100) / 100,
+      median: Math.round(median * 100) / 100,
+      q1: Math.round(q1 * 100) / 100,
+      q3: Math.round(q3 * 100) / 100,
+      stdDev: Math.round(stdDev * 100) / 100
+    };
+  }
+
+  /**
+   * Get comparable selection for Form 3CEB reporting
+   */
+  getForm3CEBComparables(
+    transactionNature: string,
+    testedPartyProfile: FunctionalProfile,
+    revenueRange: { min?: number; max?: number }
+  ): {
+    comparables: ComparableCompany[];
+    searchCriteria: ComparableSearchCriteria;
+    pliType: PLIType;
+    armLengthRange: { lower: number; upper: number; median: number };
+    summary: string;
+  } {
+    const pliType = getRecommendedPLI(testedPartyProfile);
+
+    const searchCriteria: ComparableSearchCriteria = {
+      functionalProfile: testedPartyProfile,
+      revenueMin: revenueRange.min,
+      revenueMax: revenueRange.max,
+      excludeRelatedPartyAbove: 25,
+      excludePersistentLosses: true,
+      minYearsData: 3,
+      status: ["ACTIVE"]
+    };
+
+    let comparables = this.companies.filter(c => {
+      const matchProfile = c.functionalProfile === testedPartyProfile;
+      const matchRevenue = (!revenueRange.min || c.financials[0].revenue >= revenueRange.min) &&
+                          (!revenueRange.max || c.financials[0].revenue <= revenueRange.max);
+      const matchRPT = c.relatedPartyPercent <= 25;
+      const matchLoss = !c.hasPersistentLosses;
+      const matchYears = c.yearsOfData >= 3;
+      return matchProfile && matchRevenue && matchRPT && matchLoss && matchYears;
+    });
+
+    // If too few with exact profile, expand to similar profiles
+    if (comparables.length < 5) {
+      const similarProfiles = this.getSimilarProfiles(testedPartyProfile);
+      comparables = this.companies.filter(c => {
+        const matchProfile = similarProfiles.includes(c.functionalProfile);
+        const matchRevenue = (!revenueRange.min || c.financials[0].revenue >= revenueRange.min) &&
+                            (!revenueRange.max || c.financials[0].revenue <= revenueRange.max);
+        const matchRPT = c.relatedPartyPercent <= 25;
+        const matchLoss = !c.hasPersistentLosses;
+        return matchProfile && matchRevenue && matchRPT && matchLoss;
+      });
+    }
+
+    const stats = this.getPLIStatistics(comparables, pliType, "2023-24");
+
+    return {
+      comparables,
+      searchCriteria,
+      pliType,
+      armLengthRange: {
+        lower: stats.q1,
+        upper: stats.q3,
+        median: stats.median
+      },
+      summary: `Found ${comparables.length} comparable companies for ${testedPartyProfile}. ` +
+               `Arm's length range (${pliType}): ${stats.q1.toFixed(2)}% to ${stats.q3.toFixed(2)}% (median: ${stats.median.toFixed(2)}%).`
+    };
+  }
+
+  /**
+   * Get similar functional profiles for expanded search
+   */
+  private getSimilarProfiles(profile: FunctionalProfile): FunctionalProfile[] {
+    const profileGroups: Record<string, FunctionalProfile[]> = {
+      "IT_SERVICES_GROUP": ["IT_SERVICES", "SERVICE_PROVIDER_FULL", "SERVICE_PROVIDER_CONTRACT"],
+      "ITES_GROUP": ["ITES_BPO", "KPO", "SERVICE_PROVIDER_CONTRACT"],
+      "MANUFACTURING_GROUP": ["MANUFACTURER_FULL_FLEDGED", "MANUFACTURER_CONTRACT", "MANUFACTURER_TOLL"],
+      "DISTRIBUTION_GROUP": ["DISTRIBUTOR_FULL_FLEDGED", "DISTRIBUTOR_LIMITED_RISK", "DISTRIBUTOR_COMMISSIONAIRE"],
+      "RND_GROUP": ["R_AND_D_FULL", "R_AND_D_CONTRACT"]
+    };
+
+    for (const group of Object.values(profileGroups)) {
+      if (group.includes(profile)) {
+        return group;
+      }
+    }
+    return [profile];
+  }
+
+  /**
+   * Validate company data quality
+   */
+  validateCompanyData(company: ComparableCompany): {
+    isValid: boolean;
+    score: number;
+    issues: string[];
+    recommendations: string[];
+  } {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+    let score = 100;
+
+    // Check financial data completeness
+    if (company.financials.length < 3) {
+      issues.push(`Only ${company.financials.length} years of data available`);
+      score -= 15;
+      recommendations.push("Obtain additional years of financial data");
+    }
+
+    // Check for zero or negative values
+    for (const fin of company.financials) {
+      if (fin.revenue <= 0) {
+        issues.push(`Zero/negative revenue in ${fin.year}`);
+        score -= 10;
+      }
+      if (fin.totalAssets <= 0) {
+        issues.push(`Zero/negative assets in ${fin.year}`);
+        score -= 5;
+      }
+    }
+
+    // Check related party transactions
+    if (company.relatedPartyPercent > 15) {
+      issues.push(`Related party transactions at ${company.relatedPartyPercent}% may affect comparability`);
+      score -= 5;
+    }
+    if (company.relatedPartyPercent > 25) {
+      issues.push(`Related party transactions exceed 25% threshold`);
+      score -= 20;
+      recommendations.push("Consider excluding from comparable set or making adjustments");
+    }
+
+    // Check for persistent losses
+    if (company.hasPersistentLosses) {
+      issues.push(`Company has persistent losses (${company.lossYears} years)`);
+      score -= 15;
+      recommendations.push("Exclude from comparable set per OECD Guidelines Para 3.64");
+    }
+
+    // Check for extraordinary items
+    if (company.hasExtraordinaryItems) {
+      issues.push("Company has extraordinary items that may distort margins");
+      score -= 10;
+      recommendations.push("Consider making adjustments for extraordinary items");
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+      isValid: score >= 60 && !company.hasPersistentLosses && company.relatedPartyPercent <= 25,
+      score,
+      issues,
+      recommendations
+    };
+  }
+
+  /**
+   * Get database statistics
+   */
+  getDatabaseStats(): {
+    totalCompanies: number;
+    byIndustry: Record<string, number>;
+    byFunctionalProfile: Record<string, number>;
+    byStatus: Record<string, number>;
+    averageDataQuality: number;
+    companiesWithFullData: number;
+  } {
+    const byIndustry: Record<string, number> = {};
+    const byFunctionalProfile: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalQuality = 0;
+    let fullDataCount = 0;
+
+    for (const company of this.companies) {
+      byIndustry[company.industry] = (byIndustry[company.industry] || 0) + 1;
+      byFunctionalProfile[company.functionalProfile] = (byFunctionalProfile[company.functionalProfile] || 0) + 1;
+      byStatus[company.status] = (byStatus[company.status] || 0) + 1;
+      totalQuality += company.dataQualityScore;
+      if (company.yearsOfData >= 3) fullDataCount++;
+    }
+
+    return {
+      totalCompanies: this.companies.length,
+      byIndustry,
+      byFunctionalProfile,
+      byStatus,
+      averageDataQuality: Math.round(totalQuality / this.companies.length),
+      companiesWithFullData: fullDataCount
     };
   }
 
