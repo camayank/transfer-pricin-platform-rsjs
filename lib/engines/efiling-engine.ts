@@ -1,38 +1,69 @@
 /**
  * E-filing Engine
- * Orchestrates ITD portal submission workflows
+ * ITD Portal Integration for Transfer Pricing Form Submissions
+ *
+ * STATUS: COMING SOON
+ * This engine will integrate with the Income Tax Department's e-filing portal
+ * for electronic submission of TP forms (3CEB, 3CEAA, 3CEAD).
+ *
+ * Planned Features:
+ * - Direct API integration with ITD e-filing portal
+ * - XML generation compliant with ITD schemas
+ * - Digital signature integration
+ * - Submission tracking and acknowledgment retrieval
+ * - Automated validation against ITD rules
  */
-
-import {
-  ITDEfilingConnector,
-  EfilingSubmission,
-  SubmissionRequest,
-  SubmissionResponse,
-  SubmissionStatus,
-  FormType,
-  XMLValidationResult,
-  SubmissionError,
-  createITDEfilingConnector,
-  getFormTypes,
-  getFormSchema,
-  getFormDeadline,
-  isFormOverdue,
-  getDaysUntilDeadline,
-  FORM_SCHEMAS
-} from "../connectors/itd-portal-connector";
 
 // =============================================================================
 // TYPES AND INTERFACES
 // =============================================================================
 
-export interface EfilingEngineConfig {
-  clientId?: string;
-  clientSecret?: string;
-  environment: "SANDBOX" | "PRODUCTION";
-  autoRetry: boolean;
-  maxRetries: number;
-  retryDelay: number; // milliseconds
-  enableAuditLog: boolean;
+export type FormType = "FORM_3CEB" | "FORM_3CEAA" | "FORM_3CEAD";
+
+export type SubmissionStatus =
+  | "DRAFT"
+  | "VALIDATED"
+  | "PENDING_SIGNATURE"
+  | "SUBMITTED"
+  | "ACKNOWLEDGED"
+  | "REJECTED"
+  | "ERROR";
+
+export interface EfilingSubmission {
+  submissionId: string;
+  formType: FormType;
+  pan: string;
+  assessmentYear: string;
+  status: SubmissionStatus;
+  acknowledgmentNumber?: string;
+  submittedAt?: string;
+  errors?: string[];
+}
+
+export interface SubmissionResponse {
+  success: boolean;
+  submissionId?: string;
+  acknowledgmentNumber?: string;
+  status: SubmissionStatus;
+  message: string;
+  errors?: string[];
+}
+
+export interface XMLValidationResult {
+  valid: boolean;
+  errors: Array<{
+    field: string;
+    message: string;
+    severity: "ERROR" | "WARNING";
+  }>;
+  warnings: string[];
+}
+
+export interface SubmissionError {
+  code: string;
+  message: string;
+  field?: string;
+  suggestion?: string;
 }
 
 export interface Form3CEBData {
@@ -51,11 +82,7 @@ export interface Form3CEBData {
     address: string;
   };
   internationalTransactions: InternationalTransactionEntry[];
-  specifiedDomesticTransactions: InternationalTransactionEntry[];
-  declaration: {
-    date: string;
-    place: string;
-  };
+  specifiedDomesticTransactions?: InternationalTransactionEntry[];
 }
 
 export interface InternationalTransactionEntry {
@@ -70,61 +97,29 @@ export interface InternationalTransactionEntry {
   amountReceived: number;
   amountPaid: number;
   method: string;
-  pliBasis?: string;
   armLengthPrice: number;
-  adjustmentMade: boolean;
-  adjustmentAmount?: number;
 }
 
 export interface Form3CEAAData {
   assessmentYear: string;
   pan: string;
-  organisationalStructure: {
-    ultimateParentName: string;
-    ultimateParentCountry: string;
-    groupEntities: Array<{
-      name: string;
-      country: string;
-      nature: string;
-    }>;
-  };
-  businessDescription: string;
-  intangibles: {
-    strategy: string;
-    keyIntangibles: string[];
-    developmentLocations: string[];
-  };
-  intercompanyFinancing: {
-    description: string;
-    financingArrangements: Array<{
-      type: string;
-      terms: string;
-    }>;
-  };
-  financialAndTaxPosition: {
-    consolidatedStatements: boolean;
-    taxRulings: string[];
-  };
+  masterFileContent: Record<string, unknown>;
 }
 
 export interface Form3CEADData {
   assessmentYear: string;
   pan: string;
-  reportingFiscalYear: string;
-  reportingEntityDetails: {
-    name: string;
-    country: string;
-    role: "ULTIMATE_PARENT" | "SURROGATE_PARENT" | "CONSTITUENT";
-  };
-  jurisdictionData: JurisdictionEntry[];
-  entityData: CbCREntityEntry[];
+  cbcrContent: Record<string, unknown>;
 }
 
 export interface JurisdictionEntry {
-  jurisdiction: string;
-  unrelatedPartyRevenue: number;
-  relatedPartyRevenue: number;
-  totalRevenue: number;
+  countryCode: string;
+  countryName: string;
+  revenues: {
+    unrelated: number;
+    related: number;
+    total: number;
+  };
   profitBeforeTax: number;
   incomeTaxPaid: number;
   incomeTaxAccrued: number;
@@ -136,39 +131,38 @@ export interface JurisdictionEntry {
 
 export interface CbCREntityEntry {
   entityName: string;
-  jurisdiction: string;
-  taxJurisdiction: string;
-  businessActivities: string[];
+  countryOfIncorporation: string;
+  countryOfTaxResidence: string;
+  mainBusinessActivities: string[];
+  cin?: string;
+  pan?: string;
 }
 
 export interface SubmissionWorkflow {
-  submissionId: string;
+  workflowId: string;
   formType: FormType;
-  status: SubmissionStatus;
+  pan: string;
+  assessmentYear: string;
+  currentStep: string;
   steps: WorkflowStep[];
-  currentStep: number;
   createdAt: string;
   updatedAt: string;
-  completedAt?: string;
 }
 
 export interface WorkflowStep {
+  stepId: string;
   name: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "SKIPPED";
-  startedAt?: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
   completedAt?: string;
-  error?: string;
 }
 
 export interface AuditLogEntry {
   timestamp: string;
   action: string;
-  formType: FormType;
-  pan: string;
-  assessmentYear: string;
-  user?: string;
-  status: string;
-  details?: Record<string, unknown>;
+  formType?: FormType;
+  pan?: string;
+  details: string;
+  status: "SUCCESS" | "FAILURE";
 }
 
 export interface ComplianceStatus {
@@ -177,521 +171,377 @@ export interface ComplianceStatus {
   forms: {
     formType: FormType;
     required: boolean;
-    status: SubmissionStatus | "NOT_STARTED";
     deadline: string;
-    daysUntilDeadline: number | null;
-    overdue: boolean;
+    status: SubmissionStatus | "NOT_STARTED";
+    submittedAt?: string;
     acknowledgmentNumber?: string;
   }[];
-  overallCompliance: "COMPLIANT" | "PARTIAL" | "NON_COMPLIANT" | "PENDING";
+  overallStatus: "COMPLIANT" | "PENDING" | "OVERDUE";
 }
 
 // =============================================================================
-// DEFAULT CONFIG
+// FORM METADATA
 // =============================================================================
 
-const DEFAULT_CONFIG: EfilingEngineConfig = {
-  environment: "SANDBOX",
-  autoRetry: true,
-  maxRetries: 3,
-  retryDelay: 5000,
-  enableAuditLog: true
+const FORM_INFO: Record<FormType, {
+  name: string;
+  description: string;
+  deadline: string;
+  applicability: string;
+}> = {
+  FORM_3CEB: {
+    name: "Form 3CEB",
+    description: "Report from Accountant on International Transactions and SDT",
+    deadline: "30th November of Assessment Year",
+    applicability: "Persons entering into international transactions or SDT"
+  },
+  FORM_3CEAA: {
+    name: "Form 3CEAA",
+    description: "Master File - Part A (Constituent Entity) and Part B (Group Information)",
+    deadline: "30th November of Assessment Year",
+    applicability: "Constituent entities of international groups"
+  },
+  FORM_3CEAD: {
+    name: "Form 3CEAD",
+    description: "Country-by-Country Report",
+    deadline: "12 months from end of reporting FY",
+    applicability: "Ultimate parent entities or alternate reporting entities"
+  }
 };
 
 // =============================================================================
-// XML GENERATORS
+// COMING SOON RESPONSE
 // =============================================================================
 
-function generateForm3CEBXML(data: Form3CEBData): string {
-  const transactionsXML = data.internationalTransactions.map((t, i) => `
-    <InternationalTransaction>
-      <SerialNumber>${i + 1}</SerialNumber>
-      <NatureCode>${t.natureCode}</NatureCode>
-      <Description>${escapeXML(t.description)}</Description>
-      <AssociatedEnterprise>
-        <Name>${escapeXML(t.associatedEnterprise.name)}</Name>
-        <Country>${t.associatedEnterprise.country}</Country>
-        <Relationship>${t.associatedEnterprise.relationship}</Relationship>
-      </AssociatedEnterprise>
-      <AmountReceived>${t.amountReceived}</AmountReceived>
-      <AmountPaid>${t.amountPaid}</AmountPaid>
-      <Method>${t.method}</Method>
-      <ArmLengthPrice>${t.armLengthPrice}</ArmLengthPrice>
-      <AdjustmentMade>${t.adjustmentMade}</AdjustmentMade>
-      ${t.adjustmentAmount ? `<AdjustmentAmount>${t.adjustmentAmount}</AdjustmentAmount>` : ""}
-    </InternationalTransaction>
-  `).join("\n");
+const COMING_SOON_RESPONSE = {
+  available: false,
+  status: "COMING_SOON" as const,
+  message: "E-filing integration is coming soon. This feature will enable direct submission of TP forms to the Income Tax Department portal.",
+  plannedFeatures: [
+    "Direct ITD e-filing portal integration",
+    "XML generation compliant with ITD schemas (Version 1.4)",
+    "Digital signature (DSC) integration",
+    "Real-time submission tracking",
+    "Acknowledgment retrieval and storage",
+    "Automated validation against ITD rules",
+    "Bulk submission support",
+    "Revision and rectification workflow"
+  ],
+  currentCapabilities: [
+    "Form 3CEB data structure and validation",
+    "XML schema reference (offline)",
+    "Deadline tracking and reminders",
+    "Draft management"
+  ],
+  expectedTimeline: "Q2 2025",
+  requirements: [
+    "ITD API credentials (Client ID and Secret)",
+    "Valid DSC (Class 2 or Class 3)",
+    "Registered PAN on e-filing portal"
+  ]
+};
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Form3CEB xmlns="http://www.incometaxindia.gov.in/form3ceb" version="${FORM_SCHEMAS.FORM_3CEB.version}">
-  <AssessmentYear>${data.assessmentYear}</AssessmentYear>
-  <PAN>${data.pan}</PAN>
-  <Assessee>
-    <Name>${escapeXML(data.assessee.name)}</Name>
-    <Address>${escapeXML(data.assessee.address)}</Address>
-    <Email>${data.assessee.email}</Email>
-    <Status>${data.assessee.status}</Status>
-  </Assessee>
-  <Accountant>
-    <Name>${escapeXML(data.accountant.name)}</Name>
-    <MembershipNumber>${data.accountant.membershipNumber}</MembershipNumber>
-    ${data.accountant.firmName ? `<FirmName>${escapeXML(data.accountant.firmName)}</FirmName>` : ""}
-    <Address>${escapeXML(data.accountant.address)}</Address>
-  </Accountant>
-  <InternationalTransactions>
-    ${transactionsXML}
-  </InternationalTransactions>
-  <Declaration>
-    <Date>${data.declaration.date}</Date>
-    <Place>${data.declaration.place}</Place>
-  </Declaration>
-</Form3CEB>`;
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+export function getFormTypes(): FormType[] {
+  return ["FORM_3CEB", "FORM_3CEAA", "FORM_3CEAD"];
 }
 
-function generateForm3CEAAXML(data: Form3CEAAData): string {
-  const entitiesXML = data.organisationalStructure.groupEntities.map(e => `
-    <Entity>
-      <Name>${escapeXML(e.name)}</Name>
-      <Country>${e.country}</Country>
-      <Nature>${e.nature}</Nature>
-    </Entity>
-  `).join("\n");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Form3CEAA xmlns="http://www.incometaxindia.gov.in/form3ceaa" version="${FORM_SCHEMAS.FORM_3CEAA.version}">
-  <AssessmentYear>${data.assessmentYear}</AssessmentYear>
-  <PAN>${data.pan}</PAN>
-  <OrganisationalStructure>
-    <UltimateParent>
-      <Name>${escapeXML(data.organisationalStructure.ultimateParentName)}</Name>
-      <Country>${data.organisationalStructure.ultimateParentCountry}</Country>
-    </UltimateParent>
-    <GroupEntities>
-      ${entitiesXML}
-    </GroupEntities>
-  </OrganisationalStructure>
-  <BusinessDescription>${escapeXML(data.businessDescription)}</BusinessDescription>
-  <Intangibles>
-    <Strategy>${escapeXML(data.intangibles.strategy)}</Strategy>
-    <KeyIntangibles>${data.intangibles.keyIntangibles.join(", ")}</KeyIntangibles>
-  </Intangibles>
-</Form3CEAA>`;
+export function getFormSchema(formType: FormType): Record<string, unknown> {
+  return {
+    formType,
+    info: FORM_INFO[formType],
+    status: "COMING_SOON",
+    message: "Full schema will be available when e-filing integration is released"
+  };
 }
 
-function generateForm3CEADXML(data: Form3CEADData): string {
-  const jurisdictionsXML = data.jurisdictionData.map(j => `
-    <JurisdictionEntry>
-      <Jurisdiction>${j.jurisdiction}</Jurisdiction>
-      <UnrelatedPartyRevenue>${j.unrelatedPartyRevenue}</UnrelatedPartyRevenue>
-      <RelatedPartyRevenue>${j.relatedPartyRevenue}</RelatedPartyRevenue>
-      <TotalRevenue>${j.totalRevenue}</TotalRevenue>
-      <ProfitBeforeTax>${j.profitBeforeTax}</ProfitBeforeTax>
-      <IncomeTaxPaid>${j.incomeTaxPaid}</IncomeTaxPaid>
-      <IncomeTaxAccrued>${j.incomeTaxAccrued}</IncomeTaxAccrued>
-      <StatedCapital>${j.statedCapital}</StatedCapital>
-      <AccumulatedEarnings>${j.accumulatedEarnings}</AccumulatedEarnings>
-      <NumberOfEmployees>${j.numberOfEmployees}</NumberOfEmployees>
-      <TangibleAssets>${j.tangibleAssets}</TangibleAssets>
-    </JurisdictionEntry>
-  `).join("\n");
+export function getFormDeadline(formType: FormType, assessmentYear: string): string {
+  const year = parseInt(assessmentYear.split("-")[0]);
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Form3CEAD xmlns="http://www.incometaxindia.gov.in/form3cead" version="${FORM_SCHEMAS.FORM_3CEAD.version}">
-  <AssessmentYear>${data.assessmentYear}</AssessmentYear>
-  <PAN>${data.pan}</PAN>
-  <ReportingFiscalYear>${data.reportingFiscalYear}</ReportingFiscalYear>
-  <ReportingEntity>
-    <Name>${escapeXML(data.reportingEntityDetails.name)}</Name>
-    <Country>${data.reportingEntityDetails.country}</Country>
-    <Role>${data.reportingEntityDetails.role}</Role>
-  </ReportingEntity>
-  <JurisdictionData>
-    ${jurisdictionsXML}
-  </JurisdictionData>
-</Form3CEAD>`;
+  switch (formType) {
+    case "FORM_3CEB":
+    case "FORM_3CEAA":
+      return `${year}-11-30`;
+    case "FORM_3CEAD":
+      // 12 months from end of reporting FY
+      return `${year}-12-31`;
+    default:
+      return `${year}-11-30`;
+  }
 }
 
-function escapeXML(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+export function isFormOverdue(formType: FormType, assessmentYear: string): boolean {
+  const deadline = new Date(getFormDeadline(formType, assessmentYear));
+  return new Date() > deadline;
+}
+
+export function getDaysUntilDeadline(formType: FormType, assessmentYear: string): number {
+  const deadline = new Date(getFormDeadline(formType, assessmentYear));
+  const today = new Date();
+  const diffTime = deadline.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 // =============================================================================
-// MAIN ENGINE CLASS
+// E-FILING ENGINE CLASS
 // =============================================================================
 
 export class EfilingEngine {
-  private config: EfilingEngineConfig;
-  private connector: ITDEfilingConnector;
+  private drafts: Map<string, unknown> = new Map();
   private auditLog: AuditLogEntry[] = [];
-  private workflows: Map<string, SubmissionWorkflow> = new Map();
 
-  constructor(config?: Partial<EfilingEngineConfig>) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
-    this.connector = createITDEfilingConnector({
-      clientId: this.config.clientId,
-      clientSecret: this.config.clientSecret,
-      environment: this.config.environment
-    });
+  constructor() {
+    this.logAudit("ENGINE_INITIALIZED", undefined, undefined, "E-filing engine initialized in Coming Soon mode");
   }
 
   /**
-   * Test connection to ITD portal
+   * Check if e-filing is available
    */
-  async testConnection() {
-    return this.connector.testConnection();
+  isAvailable(): boolean {
+    return false;
   }
 
   /**
-   * Authenticate with ITD portal
+   * Get coming soon status
    */
-  async authenticate() {
-    return this.connector.authenticate();
+  getStatus() {
+    return COMING_SOON_RESPONSE;
   }
 
   /**
-   * Generate and submit Form 3CEB
-   */
-  async submitForm3CEB(
-    data: Form3CEBData,
-    signatureData?: string
-  ): Promise<SubmissionResponse> {
-    const xmlContent = generateForm3CEBXML(data);
-
-    // Validate first
-    const validation = await this.validateSubmission("FORM_3CEB", xmlContent);
-    if (!validation.valid) {
-      this.logAudit("VALIDATION_FAILED", "FORM_3CEB", data.pan, data.assessmentYear, "REJECTED", {
-        errors: validation.errors
-      });
-
-      return {
-        success: false,
-        status: "REJECTED",
-        errors: validation.errors,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    // Submit
-    const response = await this.submitWithRetry({
-      formType: "FORM_3CEB",
-      assessmentYear: data.assessmentYear,
-      pan: data.pan,
-      xmlContent,
-      signatureData
-    });
-
-    this.logAudit(
-      response.success ? "SUBMISSION_SUCCESS" : "SUBMISSION_FAILED",
-      "FORM_3CEB",
-      data.pan,
-      data.assessmentYear,
-      response.status,
-      { acknowledgmentNumber: response.acknowledgmentNumber }
-    );
-
-    return response;
-  }
-
-  /**
-   * Generate and submit Form 3CEAA (Master File)
-   */
-  async submitForm3CEAA(
-    data: Form3CEAAData,
-    signatureData?: string
-  ): Promise<SubmissionResponse> {
-    const xmlContent = generateForm3CEAAXML(data);
-
-    const validation = await this.validateSubmission("FORM_3CEAA", xmlContent);
-    if (!validation.valid) {
-      this.logAudit("VALIDATION_FAILED", "FORM_3CEAA", data.pan, data.assessmentYear, "REJECTED");
-      return {
-        success: false,
-        status: "REJECTED",
-        errors: validation.errors,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    const response = await this.submitWithRetry({
-      formType: "FORM_3CEAA",
-      assessmentYear: data.assessmentYear,
-      pan: data.pan,
-      xmlContent,
-      signatureData
-    });
-
-    this.logAudit(
-      response.success ? "SUBMISSION_SUCCESS" : "SUBMISSION_FAILED",
-      "FORM_3CEAA",
-      data.pan,
-      data.assessmentYear,
-      response.status
-    );
-
-    return response;
-  }
-
-  /**
-   * Generate and submit Form 3CEAD (CbCR)
-   */
-  async submitForm3CEAD(
-    data: Form3CEADData,
-    signatureData?: string
-  ): Promise<SubmissionResponse> {
-    const xmlContent = generateForm3CEADXML(data);
-
-    const validation = await this.validateSubmission("FORM_3CEAD", xmlContent);
-    if (!validation.valid) {
-      this.logAudit("VALIDATION_FAILED", "FORM_3CEAD", data.pan, data.assessmentYear, "REJECTED");
-      return {
-        success: false,
-        status: "REJECTED",
-        errors: validation.errors,
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    const response = await this.submitWithRetry({
-      formType: "FORM_3CEAD",
-      assessmentYear: data.assessmentYear,
-      pan: data.pan,
-      xmlContent,
-      signatureData
-    });
-
-    this.logAudit(
-      response.success ? "SUBMISSION_SUCCESS" : "SUBMISSION_FAILED",
-      "FORM_3CEAD",
-      data.pan,
-      data.assessmentYear,
-      response.status
-    );
-
-    return response;
-  }
-
-  /**
-   * Submit with retry logic
-   */
-  private async submitWithRetry(request: SubmissionRequest): Promise<SubmissionResponse> {
-    let lastError: SubmissionResponse | undefined;
-
-    for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
-      try {
-        const response = await this.connector.submitForm(request);
-
-        if (response.success || response.status === "PENDING_SIGNATURE") {
-          return response;
-        }
-
-        // Check if error is retryable
-        const retryable = response.errors?.some(e =>
-          e.code.startsWith("NETWORK") || e.code.startsWith("TIMEOUT")
-        );
-
-        if (!retryable) {
-          return response;
-        }
-
-        lastError = response;
-
-        // Wait before retry
-        if (this.config.autoRetry && attempt < this.config.maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
-        }
-      } catch (error) {
-        lastError = {
-          success: false,
-          status: "REJECTED",
-          errors: [{
-            code: "SYSTEM001",
-            message: error instanceof Error ? error.message : "Unknown error",
-            severity: "ERROR"
-          }],
-          timestamp: new Date().toISOString()
-        };
-      }
-    }
-
-    return lastError!;
-  }
-
-  /**
-   * Validate submission before sending
-   */
-  async validateSubmission(formType: FormType, xmlContent: string): Promise<XMLValidationResult> {
-    return this.connector.validateXML(formType, xmlContent);
-  }
-
-  /**
-   * Check submission status
-   */
-  async checkStatus(
-    submissionId?: string,
-    acknowledgmentNumber?: string
-  ) {
-    return this.connector.checkStatus({ submissionId, acknowledgmentNumber });
-  }
-
-  /**
-   * Get all submissions for a company
-   */
-  async getSubmissions(pan: string, assessmentYear?: string): Promise<EfilingSubmission[]> {
-    return this.connector.getSubmissions(pan, assessmentYear);
-  }
-
-  /**
-   * Get compliance status for a company
-   */
-  async getComplianceStatus(pan: string, assessmentYear: string): Promise<ComplianceStatus> {
-    const submissions = await this.getSubmissions(pan, assessmentYear);
-
-    const requiredForms: FormType[] = ["FORM_3CEB", "FORM_3CEAA", "FORM_3CEAD"];
-
-    const forms = requiredForms.map(formType => {
-      const submission = submissions.find(s => s.formType === formType);
-      const deadline = getFormDeadline(formType, assessmentYear);
-      const overdue = isFormOverdue(formType, assessmentYear);
-      const daysUntil = getDaysUntilDeadline(formType, assessmentYear);
-
-      return {
-        formType,
-        required: true,
-        status: submission?.status ?? "NOT_STARTED" as const,
-        deadline,
-        daysUntilDeadline: daysUntil,
-        overdue,
-        acknowledgmentNumber: submission?.acknowledgmentNumber
-      };
-    });
-
-    // Determine overall compliance
-    const acknowledged = forms.filter(f => f.status === "ACKNOWLEDGED").length;
-    const overdue = forms.filter(f => f.overdue && f.status === "NOT_STARTED").length;
-
-    let overallCompliance: ComplianceStatus["overallCompliance"];
-    if (acknowledged === forms.length) {
-      overallCompliance = "COMPLIANT";
-    } else if (overdue > 0) {
-      overallCompliance = "NON_COMPLIANT";
-    } else if (acknowledged > 0) {
-      overallCompliance = "PARTIAL";
-    } else {
-      overallCompliance = "PENDING";
-    }
-
-    return {
-      pan,
-      assessmentYear,
-      forms,
-      overallCompliance
-    };
-  }
-
-  /**
-   * Download acknowledgment
-   */
-  async downloadAcknowledgment(acknowledgmentNumber: string) {
-    return this.connector.downloadAcknowledgment(acknowledgmentNumber);
-  }
-
-  /**
-   * Create submission workflow
-   */
-  createWorkflow(formType: FormType, pan: string, assessmentYear: string): SubmissionWorkflow {
-    const workflowId = `WF_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const steps: WorkflowStep[] = [
-      { name: "Data Collection", status: "PENDING" },
-      { name: "XML Generation", status: "PENDING" },
-      { name: "Validation", status: "PENDING" },
-      { name: "Digital Signature", status: "PENDING" },
-      { name: "Submission", status: "PENDING" },
-      { name: "Acknowledgment", status: "PENDING" }
-    ];
-
-    const workflow: SubmissionWorkflow = {
-      submissionId: workflowId,
-      formType,
-      status: "DRAFT",
-      steps,
-      currentStep: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    this.workflows.set(workflowId, workflow);
-
-    this.logAudit("WORKFLOW_CREATED", formType, pan, assessmentYear, "DRAFT", { workflowId });
-
-    return workflow;
-  }
-
-  /**
-   * Get workflow status
-   */
-  getWorkflow(workflowId: string): SubmissionWorkflow | undefined {
-    return this.workflows.get(workflowId);
-  }
-
-  /**
-   * Get audit log
-   */
-  getAuditLog(pan?: string, assessmentYear?: string): AuditLogEntry[] {
-    let log = [...this.auditLog];
-
-    if (pan) {
-      log = log.filter(e => e.pan === pan);
-    }
-    if (assessmentYear) {
-      log = log.filter(e => e.assessmentYear === assessmentYear);
-    }
-
-    return log.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
-
-  /**
-   * Log audit entry
-   */
-  private logAudit(
-    action: string,
-    formType: FormType,
-    pan: string,
-    assessmentYear: string,
-    status: string,
-    details?: Record<string, unknown>
-  ): void {
-    if (!this.config.enableAuditLog) return;
-
-    this.auditLog.push({
-      timestamp: new Date().toISOString(),
-      action,
-      formType,
-      pan,
-      assessmentYear,
-      status,
-      details
-    });
-  }
-
-  /**
-   * Get form types
+   * Get supported form types
    */
   getFormTypes(): FormType[] {
     return getFormTypes();
   }
 
   /**
-   * Get form schema
+   * Get form schema/info
    */
   getFormSchema(formType: FormType) {
     return getFormSchema(formType);
+  }
+
+  /**
+   * Get form deadline
+   */
+  getFormDeadline(formType: FormType, assessmentYear: string): string {
+    return getFormDeadline(formType, assessmentYear);
+  }
+
+  /**
+   * Check if form is overdue
+   */
+  isFormOverdue(formType: FormType, assessmentYear: string): boolean {
+    return isFormOverdue(formType, assessmentYear);
+  }
+
+  /**
+   * Submit Form 3CEB - COMING SOON
+   */
+  async submitForm3CEB(
+    _data: Form3CEBData,
+    _signatureData?: unknown
+  ): Promise<SubmissionResponse> {
+    this.logAudit("SUBMIT_ATTEMPTED", "FORM_3CEB", _data.pan, "Submission attempted - feature coming soon");
+
+    return {
+      success: false,
+      status: "ERROR",
+      message: "E-filing submission is coming soon. Please use the ITD e-filing portal directly for now.",
+      errors: ["FEATURE_NOT_AVAILABLE: E-filing integration is under development"]
+    };
+  }
+
+  /**
+   * Submit Form 3CEAA - COMING SOON
+   */
+  async submitForm3CEAA(
+    _data: Form3CEAAData,
+    _signatureData?: unknown
+  ): Promise<SubmissionResponse> {
+    this.logAudit("SUBMIT_ATTEMPTED", "FORM_3CEAA", _data.pan, "Submission attempted - feature coming soon");
+
+    return {
+      success: false,
+      status: "ERROR",
+      message: "E-filing submission is coming soon. Please use the ITD e-filing portal directly for now.",
+      errors: ["FEATURE_NOT_AVAILABLE: E-filing integration is under development"]
+    };
+  }
+
+  /**
+   * Submit Form 3CEAD - COMING SOON
+   */
+  async submitForm3CEAD(
+    _data: Form3CEADData,
+    _signatureData?: unknown
+  ): Promise<SubmissionResponse> {
+    this.logAudit("SUBMIT_ATTEMPTED", "FORM_3CEAD", _data.pan, "Submission attempted - feature coming soon");
+
+    return {
+      success: false,
+      status: "ERROR",
+      message: "E-filing submission is coming soon. Please use the ITD e-filing portal directly for now.",
+      errors: ["FEATURE_NOT_AVAILABLE: E-filing integration is under development"]
+    };
+  }
+
+  /**
+   * Validate submission data - COMING SOON
+   */
+  async validateSubmission(
+    formType: FormType,
+    _xmlContent: string
+  ): Promise<XMLValidationResult> {
+    this.logAudit("VALIDATE_ATTEMPTED", formType, undefined, "Validation attempted - feature coming soon");
+
+    return {
+      valid: false,
+      errors: [{
+        field: "system",
+        message: "XML validation against ITD schema is coming soon",
+        severity: "WARNING"
+      }],
+      warnings: ["Full validation will be available when e-filing integration is released"]
+    };
+  }
+
+  /**
+   * Check submission status - COMING SOON
+   */
+  async checkStatus(
+    _submissionId?: string,
+    _acknowledgmentNumber?: string
+  ): Promise<{ found: boolean; submission?: EfilingSubmission; message: string }> {
+    return {
+      found: false,
+      message: "Status tracking is coming soon. Please check status on the ITD e-filing portal."
+    };
+  }
+
+  /**
+   * Get submissions for a PAN - COMING SOON
+   */
+  async getSubmissions(_pan: string, _assessmentYear?: string): Promise<EfilingSubmission[]> {
+    return [];
+  }
+
+  /**
+   * Get compliance status - COMING SOON
+   */
+  async getComplianceStatus(pan: string, assessmentYear: string): Promise<ComplianceStatus> {
+    return {
+      pan,
+      assessmentYear,
+      forms: getFormTypes().map(formType => ({
+        formType,
+        required: true,
+        deadline: getFormDeadline(formType, assessmentYear),
+        status: "NOT_STARTED" as const,
+      })),
+      overallStatus: "PENDING"
+    };
+  }
+
+  /**
+   * Download acknowledgment - COMING SOON
+   */
+  async downloadAcknowledgment(_acknowledgmentNumber: string): Promise<never> {
+    throw new Error("Acknowledgment download is coming soon. Please download from ITD e-filing portal.");
+  }
+
+  /**
+   * Create workflow - Returns template workflow
+   */
+  createWorkflow(formType: FormType, pan: string, assessmentYear: string): SubmissionWorkflow {
+    return {
+      workflowId: `WF-${Date.now()}`,
+      formType,
+      pan,
+      assessmentYear,
+      currentStep: "DATA_ENTRY",
+      steps: [
+        { stepId: "1", name: "Data Entry", status: "PENDING" },
+        { stepId: "2", name: "Validation", status: "PENDING" },
+        { stepId: "3", name: "Review", status: "PENDING" },
+        { stepId: "4", name: "Digital Signature", status: "PENDING" },
+        { stepId: "5", name: "Submission", status: "PENDING" },
+        { stepId: "6", name: "Acknowledgment", status: "PENDING" }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Get workflow by ID
+   */
+  getWorkflow(_workflowId: string): SubmissionWorkflow | null {
+    return null;
+  }
+
+  /**
+   * Save draft
+   */
+  saveDraft(formType: FormType, pan: string, data: unknown): string {
+    const draftId = `DRAFT-${formType}-${pan}-${Date.now()}`;
+    this.drafts.set(draftId, { formType, pan, data, savedAt: new Date().toISOString() });
+    this.logAudit("DRAFT_SAVED", formType, pan, `Draft saved: ${draftId}`);
+    return draftId;
+  }
+
+  /**
+   * Get draft
+   */
+  getDraft(draftId: string): unknown {
+    return this.drafts.get(draftId) || null;
+  }
+
+  /**
+   * Get audit log
+   */
+  getAuditLog(pan?: string, assessmentYear?: string): AuditLogEntry[] {
+    let logs = [...this.auditLog];
+    if (pan) {
+      logs = logs.filter(log => log.pan === pan);
+    }
+    return logs.slice(-100); // Return last 100 entries
+  }
+
+  /**
+   * Test connection - Returns coming soon status
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; status: string }> {
+    return {
+      success: false,
+      message: "ITD portal integration is coming soon",
+      status: "COMING_SOON"
+    };
+  }
+
+  /**
+   * Authenticate - Returns coming soon status
+   */
+  async authenticate(): Promise<{ success: boolean; expiresIn?: number; message: string }> {
+    return {
+      success: false,
+      message: "Authentication with ITD portal is coming soon"
+    };
+  }
+
+  private logAudit(action: string, formType?: FormType, pan?: string, details?: string): void {
+    this.auditLog.push({
+      timestamp: new Date().toISOString(),
+      action,
+      formType,
+      pan,
+      details: details || action,
+      status: "SUCCESS"
+    });
   }
 }
 
@@ -699,46 +549,19 @@ export class EfilingEngine {
 // FACTORY FUNCTION
 // =============================================================================
 
-export const createEfilingEngine = (config?: Partial<EfilingEngineConfig>): EfilingEngine => {
-  return new EfilingEngine(config);
-};
-
-// =============================================================================
-// RE-EXPORTS
-// =============================================================================
-
-export type {
-  FormType,
-  SubmissionStatus,
-  EfilingSubmission,
-  SubmissionResponse,
-  XMLValidationResult,
-  SubmissionError
-};
-
-export {
-  getFormTypes,
-  getFormSchema,
-  getFormDeadline,
-  isFormOverdue,
-  getDaysUntilDeadline
-};
+export function createEfilingEngine(): EfilingEngine {
+  return new EfilingEngine();
+}
 
 // =============================================================================
 // VERSION INFO
 // =============================================================================
 
 export const EFILING_ENGINE_VERSION = {
-  version: "1.0.0",
-  supportedForms: getFormTypes().length,
+  version: "0.1.0-preview",
+  status: "COMING_SOON",
   lastUpdated: "2025-01-29",
-  features: {
-    form3CEB: true,
-    form3CEAA: true,
-    form3CEAD: true,
-    xmlGeneration: true,
-    validation: true,
-    workflowTracking: true,
-    auditLog: true
-  }
+  itdSchemaVersion: "1.4",
+  supportedForms: ["FORM_3CEB", "FORM_3CEAA", "FORM_3CEAD"],
+  plannedRelease: "Q2 2025"
 };

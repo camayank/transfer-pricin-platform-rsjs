@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
           limit: params.limit ?? 30
         });
 
-        const { calculateBenchmarkingSet } = await import("@/lib/connectors/comparable-connector");
+        const { calculateBenchmarkingSet } = await import("@/lib/engines/comparable-search-engine");
         const benchmark = calculateBenchmarkingSet(
           searchResult.companies,
           params.pliType,
