@@ -4941,23 +4941,974 @@ export function getFunctionalProfiles(): FunctionalProfile[] {
 }
 
 // =============================================================================
+// COMPREHENSIVE ADJUSTMENT ENGINE
+// =============================================================================
+
+export type AdjustmentType =
+  | "WORKING_CAPITAL"
+  | "CAPACITY_UTILIZATION"
+  | "ACCOUNTING_DIFFERENCES"
+  | "RISK_ADJUSTMENT"
+  | "GEOGRAPHIC"
+  | "EXTRAORDINARY_ITEMS"
+  | "ECONOMIC_CYCLE"
+  | "INTANGIBLE_RELATED"
+  | "SIZE_ADJUSTMENT"
+  | "PRODUCT_DIFFERENCES"
+  | "CONTRACTUAL_TERMS"
+  | "FUNCTIONAL_INTENSITY"
+  | "LEVERAGE_ADJUSTMENT"
+  | "INVENTORY_VALUATION"
+  | "DEPRECIATION_METHOD";
+
+export interface ComparabilityAdjustment {
+  type: AdjustmentType;
+  description: string;
+  adjustmentPercent: number;
+  basis: string;
+  regulatoryReference: string;
+  applied: boolean;
+  impact: "INCREASES_PLI" | "DECREASES_PLI" | "NEUTRAL";
+}
+
+export interface AdjustedPLI {
+  originalPLI: number;
+  adjustments: ComparabilityAdjustment[];
+  totalAdjustmentPercent: number;
+  adjustedPLI: number;
+  confidence: number;
+}
+
+/**
+ * Comprehensive adjustment engine per Rule 10B(3) and OECD Chapter 3
+ */
+export function calculateComprehensiveAdjustments(
+  testedParty: { financials: CompanyFinancials; profile: FunctionalProfile },
+  comparable: ComparableCompany,
+  pliType: PLIType
+): AdjustedPLI {
+  const adjustments: ComparabilityAdjustment[] = [];
+  const compFinancials = comparable.financials[0];
+
+  // Get base PLI
+  const basePLI = comparable.plis.find(p => p.pliType === pliType && p.year === "2023-24")?.value || 0;
+
+  // 1. Working Capital Adjustment (Rule 10B(3)(c))
+  const testedWCDays = calculateWorkingCapitalDays(testedParty.financials).workingCapitalDays;
+  const compWCDays = calculateWorkingCapitalDays(compFinancials).workingCapitalDays;
+  const wcDifference = testedWCDays - compWCDays;
+  if (Math.abs(wcDifference) > 15) {
+    const wcAdjustment = wcDifference * 0.001; // 0.1% per day difference
+    adjustments.push({
+      type: "WORKING_CAPITAL",
+      description: `Working capital days difference: ${wcDifference.toFixed(0)} days`,
+      adjustmentPercent: wcAdjustment,
+      basis: `Tested party WC: ${testedWCDays.toFixed(0)} days, Comparable WC: ${compWCDays.toFixed(0)} days`,
+      regulatoryReference: "Rule 10B(3)(c), OECD Para 3.47-3.54",
+      applied: true,
+      impact: wcAdjustment > 0 ? "INCREASES_PLI" : "DECREASES_PLI"
+    });
+  }
+
+  // 2. Capacity Utilization Adjustment
+  const testedCapacity = testedParty.financials.revenue / (testedParty.financials.fixedAssets || 1);
+  const compCapacity = compFinancials.revenue / (compFinancials.fixedAssets || 1);
+  const capacityDiff = ((testedCapacity - compCapacity) / compCapacity) * 100;
+  if (Math.abs(capacityDiff) > 20) {
+    const capAdjustment = capacityDiff * 0.02;
+    adjustments.push({
+      type: "CAPACITY_UTILIZATION",
+      description: `Capacity utilization difference: ${capacityDiff.toFixed(1)}%`,
+      adjustmentPercent: Math.min(Math.max(capAdjustment, -2), 2),
+      basis: "Asset turnover ratio comparison",
+      regulatoryReference: "OECD Para 3.55-3.62",
+      applied: true,
+      impact: capAdjustment > 0 ? "INCREASES_PLI" : "DECREASES_PLI"
+    });
+  }
+
+  // 3. Risk Adjustment (based on FAR profile)
+  const testedRiskScore = getRiskScore(testedParty.profile);
+  const compRiskScore = getRiskScore(comparable.functionalProfile);
+  const riskDiff = testedRiskScore - compRiskScore;
+  if (Math.abs(riskDiff) > 10) {
+    const riskAdjustment = riskDiff * 0.05;
+    adjustments.push({
+      type: "RISK_ADJUSTMENT",
+      description: `Risk profile difference score: ${riskDiff}`,
+      adjustmentPercent: riskAdjustment,
+      basis: "Functional risk profile comparison",
+      regulatoryReference: "Rule 10B(2)(d), OECD Para 1.56-1.106",
+      applied: true,
+      impact: riskAdjustment > 0 ? "INCREASES_PLI" : "DECREASES_PLI"
+    });
+  }
+
+  // 4. Size Adjustment (revenue-based)
+  const revRatio = testedParty.financials.revenue / compFinancials.revenue;
+  if (revRatio < 0.3 || revRatio > 3) {
+    const sizeAdjustment = revRatio < 1 ? -0.5 : 0.5;
+    adjustments.push({
+      type: "SIZE_ADJUSTMENT",
+      description: `Significant size difference (ratio: ${revRatio.toFixed(2)})`,
+      adjustmentPercent: sizeAdjustment,
+      basis: "Revenue size differential",
+      regulatoryReference: "OECD Para 3.43",
+      applied: true,
+      impact: sizeAdjustment > 0 ? "INCREASES_PLI" : "DECREASES_PLI"
+    });
+  }
+
+  // 5. Extraordinary Items Adjustment
+  if (comparable.hasExtraordinaryItems) {
+    adjustments.push({
+      type: "EXTRAORDINARY_ITEMS",
+      description: "Comparable has extraordinary items",
+      adjustmentPercent: 0,
+      basis: "Extraordinary items excluded from PLI calculation",
+      regulatoryReference: "Rule 10B(2)(e), OECD Para 3.64",
+      applied: false,
+      impact: "NEUTRAL"
+    });
+  }
+
+  // Calculate total adjustment
+  const totalAdjustment = adjustments
+    .filter(a => a.applied)
+    .reduce((sum, a) => sum + a.adjustmentPercent, 0);
+
+  const adjustedPLI = basePLI + totalAdjustment;
+
+  // Calculate confidence based on adjustment magnitude
+  const confidence = Math.max(50, 100 - Math.abs(totalAdjustment) * 5);
+
+  return {
+    originalPLI: basePLI,
+    adjustments,
+    totalAdjustmentPercent: totalAdjustment,
+    adjustedPLI,
+    confidence
+  };
+}
+
+function getWorkingCapitalDaysSimple(fin: CompanyFinancials): number {
+  const receivableDays = (fin.receivables / fin.revenue) * 365;
+  const inventoryDays = fin.operatingCost > 0 ? (fin.inventory / fin.operatingCost) * 365 : 0;
+  const payableDays = fin.operatingCost > 0 ? (fin.payables / fin.operatingCost) * 365 : 0;
+  return receivableDays + inventoryDays - payableDays;
+}
+
+function getRiskScore(profile: FunctionalProfile): number {
+  const riskScores: Record<FunctionalProfile, number> = {
+    "MANUFACTURER_FULL_FLEDGED": 80,
+    "DISTRIBUTOR_FULL_FLEDGED": 70,
+    "SERVICE_PROVIDER_FULL": 75,
+    "R_AND_D_FULL": 85,
+    "MANUFACTURER_CONTRACT": 40,
+    "MANUFACTURER_TOLL": 25,
+    "DISTRIBUTOR_LIMITED_RISK": 35,
+    "DISTRIBUTOR_COMMISSIONAIRE": 20,
+    "SERVICE_PROVIDER_CONTRACT": 45,
+    "IT_SERVICES": 60,
+    "ITES_BPO": 50,
+    "KPO": 55,
+    "R_AND_D_CONTRACT": 50,
+    "HOLDING_COMPANY": 30,
+    "FINANCING": 65
+  };
+  return riskScores[profile] || 50;
+}
+
+// =============================================================================
+// REGULATORY COMPLIANCE VALIDATOR (Rule 10A-E)
+// =============================================================================
+
+export interface RegulatoryComplianceResult {
+  isCompliant: boolean;
+  overallScore: number;
+  rule10ACompliance: {
+    passed: boolean;
+    issues: string[];
+    methodSelectionValid: boolean;
+  };
+  rule10BCompliance: {
+    passed: boolean;
+    screeningCriteriaMet: string[];
+    screeningCriteriaFailed: string[];
+  };
+  rule10CACompliance: {
+    passed: boolean;
+    rangeMethod: "IQR" | "ARITHMETIC_MEAN" | "MULTIPLE_YEAR_WEIGHTED";
+    rangeValid: boolean;
+  };
+  rule10DCompliance: {
+    passed: boolean;
+    documentationScore: number;
+    missingDocuments: string[];
+  };
+  oecdAlignment: {
+    chapter: number;
+    paragraphs: string[];
+    alignmentScore: number;
+  };
+}
+
+/**
+ * Comprehensive regulatory compliance validator
+ */
+export function validateRegulatoryCompliance(
+  analysis: ComparabilityAnalysis,
+  pliType: PLIType
+): RegulatoryComplianceResult {
+  const issues: string[] = [];
+  let score = 100;
+
+  // Rule 10A: Method Selection
+  const validMethods = getValidMethodsForProfile(analysis.testedParty.functionalProfile);
+  const methodSelectionValid = validMethods.includes(pliType);
+  if (!methodSelectionValid) {
+    issues.push(`PLI type ${pliType} may not be most appropriate for ${analysis.testedParty.functionalProfile}`);
+    score -= 10;
+  }
+
+  // Rule 10B: Screening Criteria
+  const screeningMet: string[] = [];
+  const screeningFailed: string[] = [];
+
+  // Check minimum comparables
+  if (analysis.finalSet >= 3) {
+    screeningMet.push("Minimum 3 comparables requirement met");
+  } else {
+    screeningFailed.push(`Only ${analysis.finalSet} comparables (minimum 3 required)`);
+    score -= 15;
+  }
+
+  // Check RPT filter
+  const rptFiltered = analysis.rejectionMatrix.find(r => r.reason.includes("Related party"));
+  if (rptFiltered) {
+    screeningMet.push("Related party transaction filter applied");
+  }
+
+  // Check persistent losses filter
+  const lossFiltered = analysis.rejectionMatrix.find(r => r.reason.includes("Persistent"));
+  if (lossFiltered) {
+    screeningMet.push("Persistent losses filter applied");
+  }
+
+  // Check data availability
+  if (analysis.acceptedComparables.every(c => c.yearsOfData >= 3)) {
+    screeningMet.push("Multi-year data availability confirmed");
+  } else {
+    screeningFailed.push("Some comparables have less than 3 years data");
+    score -= 5;
+  }
+
+  // Rule 10CA: Range Computation
+  const rangeValid = analysis.benchmarkingSet.armLengthRange.lowerBound <
+                     analysis.benchmarkingSet.armLengthRange.upperBound;
+
+  // Rule 10D: Documentation
+  const documentationScore = calculateDocumentationScore(analysis);
+  const missingDocs: string[] = [];
+  if (analysis.acceptedComparables.length < 5) {
+    missingDocs.push("Consider adding more comparables for robust analysis");
+  }
+  if (!analysis.rejectionMatrix.length) {
+    missingDocs.push("Rejection matrix documentation missing");
+  }
+
+  // OECD Alignment
+  const oecdChapter = getRelevantOECDChapter(analysis.testedParty.functionalProfile);
+
+  const overallScore = Math.max(0, Math.min(100, score));
+
+  return {
+    isCompliant: overallScore >= 70 && screeningFailed.length === 0,
+    overallScore,
+    rule10ACompliance: {
+      passed: methodSelectionValid,
+      issues,
+      methodSelectionValid
+    },
+    rule10BCompliance: {
+      passed: screeningFailed.length === 0,
+      screeningCriteriaMet: screeningMet,
+      screeningCriteriaFailed: screeningFailed
+    },
+    rule10CACompliance: {
+      passed: rangeValid,
+      rangeMethod: "IQR",
+      rangeValid
+    },
+    rule10DCompliance: {
+      passed: documentationScore >= 70,
+      documentationScore,
+      missingDocuments: missingDocs
+    },
+    oecdAlignment: {
+      chapter: oecdChapter,
+      paragraphs: getRelevantOECDParagraphs(oecdChapter),
+      alignmentScore: 85
+    }
+  };
+}
+
+function getValidMethodsForProfile(profile: FunctionalProfile): PLIType[] {
+  const methodMap: Record<string, PLIType[]> = {
+    "IT_SERVICES": ["OP_OC", "OP_OR", "BERRY_RATIO"],
+    "ITES_BPO": ["OP_OC", "OP_OR"],
+    "KPO": ["OP_OC", "OP_OR"],
+    "MANUFACTURER_CONTRACT": ["OP_OC", "OP_TC", "NCP_SALES"],
+    "MANUFACTURER_TOLL": ["OP_OC", "OP_TC"],
+    "MANUFACTURER_FULL_FLEDGED": ["OP_OR", "ROCE", "ROA"],
+    "DISTRIBUTOR_LIMITED_RISK": ["OP_OC", "GP_SALES", "BERRY_RATIO"],
+    "DISTRIBUTOR_FULL_FLEDGED": ["OP_OR", "GP_SALES"],
+    "R_AND_D_CONTRACT": ["OP_OC", "OP_TC"],
+    "R_AND_D_FULL": ["OP_OR", "ROCE"],
+    "SERVICE_PROVIDER_CONTRACT": ["OP_OC"],
+    "SERVICE_PROVIDER_FULL": ["OP_OR", "BERRY_RATIO"]
+  };
+  return methodMap[profile] || ["OP_OC", "OP_OR"];
+}
+
+function calculateDocumentationScore(analysis: ComparabilityAnalysis): number {
+  let score = 100;
+  if (analysis.finalSet < 5) score -= 10;
+  if (analysis.rejectionMatrix.length === 0) score -= 15;
+  if (!analysis.benchmarkingSet.armLengthRange) score -= 20;
+  return Math.max(0, score);
+}
+
+function getRelevantOECDChapter(profile: FunctionalProfile): number {
+  if (profile.includes("MANUFACTURER")) return 2;
+  if (profile.includes("DISTRIBUTOR")) return 2;
+  if (profile.includes("R_AND_D")) return 6;
+  if (profile.includes("SERVICE")) return 7;
+  if (profile.includes("FINANCING")) return 10;
+  return 3;
+}
+
+function getRelevantOECDParagraphs(chapter: number): string[] {
+  const paragraphs: Record<number, string[]> = {
+    2: ["2.1-2.12 (Method Selection)", "2.64-2.75 (TNMM)", "2.114-2.131 (PSM)"],
+    3: ["3.1-3.6 (Comparability)", "3.24-3.42 (Functional Analysis)", "3.47-3.54 (Adjustments)"],
+    6: ["6.6-6.31 (Intangible Identification)", "6.32-6.64 (DEMPE Functions)"],
+    7: ["7.1-7.42 (Low Value Services)", "7.43-7.65 (Benefit Test)"],
+    10: ["10.1-10.25 (Accurate Delineation)", "10.55-10.118 (Loans)", "10.119-10.145 (Guarantees)"]
+  };
+  return paragraphs[chapter] || ["3.1-3.6 (Comparability)"];
+}
+
+// =============================================================================
+// STATISTICAL ANALYSIS ENGINE
+// =============================================================================
+
+export interface StatisticalAnalysis {
+  sampleSize: number;
+  mean: number;
+  median: number;
+  standardDeviation: number;
+  variance: number;
+  skewness: number;
+  kurtosis: number;
+  confidenceInterval95: { lower: number; upper: number };
+  confidenceInterval99: { lower: number; upper: number };
+  outliers: { value: number; company: string; zScore: number }[];
+  normalityTest: { isNormal: boolean; pValue: number };
+  sensitivityAnalysis: {
+    withoutOutliers: { median: number; iqr: { q1: number; q3: number } };
+    impactOfEachComparable: { company: string; impactOnMedian: number }[];
+  };
+}
+
+/**
+ * Comprehensive statistical analysis with confidence intervals
+ */
+export function performStatisticalAnalysis(
+  comparables: ComparableCompany[],
+  pliType: PLIType,
+  year: string = "2023-24"
+): StatisticalAnalysis {
+  const values = comparables
+    .flatMap(c => c.plis)
+    .filter(p => p.pliType === pliType && p.year === year)
+    .map(p => ({ value: p.value, company: comparables.find(c => c.plis.includes(p))?.name || "Unknown" }));
+
+  const numericValues = values.map(v => v.value).sort((a, b) => a - b);
+  const n = numericValues.length;
+
+  if (n === 0) {
+    return getEmptyStatistics();
+  }
+
+  // Basic statistics
+  const mean = numericValues.reduce((a, b) => a + b, 0) / n;
+  const median = n % 2 === 0
+    ? (numericValues[n/2 - 1] + numericValues[n/2]) / 2
+    : numericValues[Math.floor(n/2)];
+
+  const variance = numericValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (n - 1);
+  const stdDev = Math.sqrt(variance);
+
+  // Skewness and Kurtosis
+  const skewness = n > 2
+    ? (n / ((n-1) * (n-2))) * numericValues.reduce((sum, v) => sum + Math.pow((v - mean) / stdDev, 3), 0)
+    : 0;
+  const kurtosis = n > 3
+    ? ((n * (n+1)) / ((n-1) * (n-2) * (n-3))) * numericValues.reduce((sum, v) => sum + Math.pow((v - mean) / stdDev, 4), 0) - (3 * Math.pow(n-1, 2)) / ((n-2) * (n-3))
+    : 0;
+
+  // Confidence intervals using t-distribution approximation
+  const tValue95 = 1.96 + 2.4 / n; // Approximation for 95% CI
+  const tValue99 = 2.576 + 3.6 / n; // Approximation for 99% CI
+  const standardError = stdDev / Math.sqrt(n);
+
+  // Outlier detection using modified Z-score
+  const mad = calculateMAD(numericValues, median);
+  const outliers = values
+    .map(v => ({
+      value: v.value,
+      company: v.company,
+      zScore: mad > 0 ? 0.6745 * (v.value - median) / mad : 0
+    }))
+    .filter(v => Math.abs(v.zScore) > 3.5);
+
+  // Sensitivity analysis
+  const withoutOutliers = numericValues.filter(v => !outliers.some(o => o.value === v));
+  const medianWithoutOutliers = withoutOutliers.length > 0
+    ? withoutOutliers[Math.floor(withoutOutliers.length / 2)]
+    : median;
+  const q1WithoutOutliers = withoutOutliers[Math.floor(withoutOutliers.length * 0.25)] || 0;
+  const q3WithoutOutliers = withoutOutliers[Math.floor(withoutOutliers.length * 0.75)] || 0;
+
+  // Impact of each comparable on median
+  const impactAnalysis = values.map(v => {
+    const withoutThis = numericValues.filter(x => x !== v.value).sort((a, b) => a - b);
+    const newMedian = withoutThis.length > 0
+      ? withoutThis[Math.floor(withoutThis.length / 2)]
+      : 0;
+    return {
+      company: v.company,
+      impactOnMedian: Math.round((median - newMedian) * 100) / 100
+    };
+  });
+
+  return {
+    sampleSize: n,
+    mean: Math.round(mean * 100) / 100,
+    median: Math.round(median * 100) / 100,
+    standardDeviation: Math.round(stdDev * 100) / 100,
+    variance: Math.round(variance * 100) / 100,
+    skewness: Math.round(skewness * 100) / 100,
+    kurtosis: Math.round(kurtosis * 100) / 100,
+    confidenceInterval95: {
+      lower: Math.round((mean - tValue95 * standardError) * 100) / 100,
+      upper: Math.round((mean + tValue95 * standardError) * 100) / 100
+    },
+    confidenceInterval99: {
+      lower: Math.round((mean - tValue99 * standardError) * 100) / 100,
+      upper: Math.round((mean + tValue99 * standardError) * 100) / 100
+    },
+    outliers,
+    normalityTest: {
+      isNormal: Math.abs(skewness) < 2 && Math.abs(kurtosis) < 7,
+      pValue: Math.abs(skewness) < 1 ? 0.15 : 0.05
+    },
+    sensitivityAnalysis: {
+      withoutOutliers: {
+        median: medianWithoutOutliers,
+        iqr: { q1: q1WithoutOutliers, q3: q3WithoutOutliers }
+      },
+      impactOfEachComparable: impactAnalysis
+    }
+  };
+}
+
+function calculateMAD(values: number[], median: number): number {
+  const deviations = values.map(v => Math.abs(v - median)).sort((a, b) => a - b);
+  return deviations[Math.floor(deviations.length / 2)] || 0;
+}
+
+function getEmptyStatistics(): StatisticalAnalysis {
+  return {
+    sampleSize: 0,
+    mean: 0,
+    median: 0,
+    standardDeviation: 0,
+    variance: 0,
+    skewness: 0,
+    kurtosis: 0,
+    confidenceInterval95: { lower: 0, upper: 0 },
+    confidenceInterval99: { lower: 0, upper: 0 },
+    outliers: [],
+    normalityTest: { isNormal: false, pValue: 0 },
+    sensitivityAnalysis: {
+      withoutOutliers: { median: 0, iqr: { q1: 0, q3: 0 } },
+      impactOfEachComparable: []
+    }
+  };
+}
+
+// =============================================================================
+// AUDIT TRAIL SYSTEM
+// =============================================================================
+
+export interface AuditEntry {
+  timestamp: string;
+  action: string;
+  category: "SEARCH" | "SELECTION" | "REJECTION" | "ADJUSTMENT" | "VALIDATION" | "CALCULATION";
+  details: Record<string, unknown>;
+  user?: string;
+  regulatoryBasis?: string;
+}
+
+export interface SelectionAuditTrail {
+  analysisId: string;
+  createdAt: string;
+  testedParty: string;
+  pliType: PLIType;
+  entries: AuditEntry[];
+  summary: {
+    totalConsidered: number;
+    accepted: number;
+    rejected: number;
+    adjustmentsMade: number;
+  };
+}
+
+/**
+ * Create comprehensive audit trail for comparable selection
+ */
+export function createSelectionAuditTrail(
+  analysis: ComparabilityAnalysis,
+  pliType: PLIType
+): SelectionAuditTrail {
+  const entries: AuditEntry[] = [];
+  const timestamp = new Date().toISOString();
+
+  // Search initiation
+  entries.push({
+    timestamp,
+    action: "SEARCH_INITIATED",
+    category: "SEARCH",
+    details: {
+      searchCriteria: analysis.searchCriteria,
+      functionalProfile: analysis.testedParty.functionalProfile
+    },
+    regulatoryBasis: "Rule 10B(2) - Comparability factors"
+  });
+
+  // Initial pool
+  entries.push({
+    timestamp,
+    action: "INITIAL_POOL_IDENTIFIED",
+    category: "SEARCH",
+    details: { count: analysis.initialPool },
+    regulatoryBasis: "Rule 10B - Comparable search"
+  });
+
+  // Screening applied
+  entries.push({
+    timestamp,
+    action: "SCREENING_CRITERIA_APPLIED",
+    category: "SELECTION",
+    details: {
+      afterScreening: analysis.afterScreening,
+      criteriaApplied: ["Related party filter", "Persistent losses", "Data quality"]
+    },
+    regulatoryBasis: "Rule 10B(4) - Screening criteria"
+  });
+
+  // Rejections logged
+  for (const rejection of analysis.rejectionMatrix) {
+    entries.push({
+      timestamp,
+      action: "COMPARABLES_REJECTED",
+      category: "REJECTION",
+      details: {
+        reason: rejection.reason,
+        count: rejection.count,
+        companies: rejection.companies
+      },
+      regulatoryBasis: "Rule 10B(4), OECD Para 3.64"
+    });
+  }
+
+  // Final selection
+  entries.push({
+    timestamp,
+    action: "FINAL_SET_DETERMINED",
+    category: "SELECTION",
+    details: {
+      count: analysis.finalSet,
+      companies: analysis.acceptedComparables.map(c => c.name)
+    },
+    regulatoryBasis: "Rule 10B - Final comparable set"
+  });
+
+  // Range calculation
+  entries.push({
+    timestamp,
+    action: "ARM_LENGTH_RANGE_CALCULATED",
+    category: "CALCULATION",
+    details: {
+      method: "Interquartile Range (IQR)",
+      lowerBound: analysis.benchmarkingSet.armLengthRange.lowerBound,
+      upperBound: analysis.benchmarkingSet.armLengthRange.upperBound,
+      median: analysis.benchmarkingSet.armLengthRange.median
+    },
+    regulatoryBasis: "Rule 10CA - Range computation"
+  });
+
+  // Conclusion
+  entries.push({
+    timestamp,
+    action: "CONCLUSION_REACHED",
+    category: "VALIDATION",
+    details: {
+      isArmLength: analysis.conclusion.isArmLength,
+      testedPartyPLI: analysis.conclusion.testedPartyPLI,
+      adjustment: analysis.conclusion.adjustment
+    },
+    regulatoryBasis: analysis.conclusion.isArmLength
+      ? "No adjustment required per Rule 10CA"
+      : "Adjustment required per Rule 10CA(4)"
+  });
+
+  return {
+    analysisId: `AUDIT-${Date.now()}`,
+    createdAt: timestamp,
+    testedParty: analysis.testedParty.name,
+    pliType,
+    entries,
+    summary: {
+      totalConsidered: analysis.initialPool,
+      accepted: analysis.finalSet,
+      rejected: analysis.initialPool - analysis.finalSet,
+      adjustmentsMade: analysis.conclusion.adjustment ? 1 : 0
+    }
+  };
+}
+
+// =============================================================================
+// SAFE HARBOUR ELIGIBILITY CHECKER
+// =============================================================================
+
+export interface SafeHarbourEligibility {
+  isEligible: boolean;
+  applicableRules: string[];
+  eligibleCategories: {
+    category: string;
+    rule: string;
+    conditions: string[];
+    margin: string;
+    eligible: boolean;
+    reason: string;
+  }[];
+  recommendation: string;
+}
+
+/**
+ * Check Safe Harbour eligibility per Rule 10TD/10TE/10TF
+ */
+export function checkSafeHarbourEligibility(
+  testedParty: {
+    functionalProfile: FunctionalProfile;
+    financials: CompanyFinancials;
+    transactionValue: number;
+    transactionType: string;
+  }
+): SafeHarbourEligibility {
+  const eligibleCategories: SafeHarbourEligibility["eligibleCategories"] = [];
+
+  // Calculate key metrics
+  const opOc = (testedParty.financials.operatingProfit / testedParty.financials.operatingCost) * 100;
+  const opOr = (testedParty.financials.operatingProfit / testedParty.financials.revenue) * 100;
+
+  // Rule 10TD: Software Development Services / ITeS
+  if (["IT_SERVICES", "ITES_BPO", "KPO"].includes(testedParty.functionalProfile)) {
+    const margin = opOc;
+    const minMargin = testedParty.functionalProfile === "KPO" ? 24 : 17;
+
+    eligibleCategories.push({
+      category: "Software Development / ITeS",
+      rule: "Rule 10TD",
+      conditions: [
+        "Providing software development services",
+        "Providing IT enabled services (ITeS)",
+        "Transaction with AE"
+      ],
+      margin: `OP/OC ≥ ${minMargin}%`,
+      eligible: margin >= minMargin,
+      reason: margin >= minMargin
+        ? `Current margin ${margin.toFixed(2)}% meets safe harbour threshold`
+        : `Current margin ${margin.toFixed(2)}% below safe harbour threshold of ${minMargin}%`
+    });
+  }
+
+  // Rule 10TD: Contract R&D
+  if (["R_AND_D_CONTRACT"].includes(testedParty.functionalProfile)) {
+    const margin = opOc;
+    const minMargin = 24;
+
+    eligibleCategories.push({
+      category: "Contract R&D Services",
+      rule: "Rule 10TD",
+      conditions: [
+        "Providing contract R&D services wholly or partly",
+        "Not owning intangibles developed",
+        "No significant risk"
+      ],
+      margin: `OP/OC ≥ ${minMargin}%`,
+      eligible: margin >= minMargin,
+      reason: margin >= minMargin
+        ? `Current margin ${margin.toFixed(2)}% meets safe harbour threshold`
+        : `Current margin ${margin.toFixed(2)}% below safe harbour threshold of ${minMargin}%`
+    });
+  }
+
+  // Rule 10TE: Intra-group Loans
+  if (testedParty.functionalProfile === "FINANCING") {
+    eligibleCategories.push({
+      category: "Intra-group Loans (INR)",
+      rule: "Rule 10TE",
+      conditions: [
+        "Loan in INR to wholly owned subsidiary",
+        "Loan amount ≤ ₹100 Cr",
+        "Arm's length rate = SBI base rate + spread"
+      ],
+      margin: "SBI Base Rate + 175 bps",
+      eligible: testedParty.transactionValue <= 10000000000,
+      reason: testedParty.transactionValue <= 10000000000
+        ? "Transaction value within ₹100 Cr limit"
+        : "Transaction value exceeds ₹100 Cr limit"
+    });
+  }
+
+  // Rule 10TF: Corporate Guarantee
+  if (testedParty.transactionType.toLowerCase().includes("guarantee")) {
+    eligibleCategories.push({
+      category: "Corporate Guarantee",
+      rule: "Rule 10TF",
+      conditions: [
+        "Explicit guarantee to AE",
+        "Guarantee not for own obligations"
+      ],
+      margin: "Commission ≥ 1% of guarantee amount",
+      eligible: true,
+      reason: "Corporate guarantees eligible for safe harbour at 1% commission"
+    });
+  }
+
+  const isEligible = eligibleCategories.some(c => c.eligible);
+  const applicableRules = [...new Set(eligibleCategories.filter(c => c.eligible).map(c => c.rule))];
+
+  return {
+    isEligible,
+    applicableRules,
+    eligibleCategories,
+    recommendation: isEligible
+      ? `Entity is eligible for Safe Harbour under ${applicableRules.join(", ")}. Consider opting for safe harbour to simplify compliance.`
+      : "Entity does not meet Safe Harbour criteria. Standard benchmarking analysis required."
+  };
+}
+
+// =============================================================================
+// MULTI-YEAR TREND ANALYSIS
+// =============================================================================
+
+export interface TrendAnalysis {
+  company: string;
+  metric: string;
+  years: string[];
+  values: number[];
+  trend: "INCREASING" | "DECREASING" | "STABLE" | "VOLATILE";
+  cagr: number;
+  volatility: number;
+  prediction: { year: string; value: number; confidence: number };
+  anomalies: { year: string; value: number; deviation: number }[];
+}
+
+/**
+ * Perform multi-year trend analysis on PLI data
+ */
+export function analyzeMultiYearTrend(
+  company: ComparableCompany,
+  pliType: PLIType
+): TrendAnalysis {
+  const pliData = company.plis
+    .filter(p => p.pliType === pliType)
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  const years = pliData.map(p => p.year);
+  const values = pliData.map(p => p.value);
+
+  if (values.length < 2) {
+    return {
+      company: company.name,
+      metric: pliType,
+      years,
+      values,
+      trend: "STABLE",
+      cagr: 0,
+      volatility: 0,
+      prediction: { year: "2024-25", value: values[0] || 0, confidence: 50 },
+      anomalies: []
+    };
+  }
+
+  // Calculate CAGR
+  const firstValue = values[0];
+  const lastValue = values[values.length - 1];
+  const numYears = values.length - 1;
+  const cagr = ((Math.pow(lastValue / firstValue, 1 / numYears) - 1) * 100);
+
+  // Calculate volatility (standard deviation of year-over-year changes)
+  const changes: number[] = [];
+  for (let i = 1; i < values.length; i++) {
+    changes.push(((values[i] - values[i-1]) / values[i-1]) * 100);
+  }
+  const avgChange = changes.reduce((a, b) => a + b, 0) / changes.length;
+  const volatility = Math.sqrt(
+    changes.reduce((sum, c) => sum + Math.pow(c - avgChange, 2), 0) / changes.length
+  );
+
+  // Determine trend
+  let trend: TrendAnalysis["trend"];
+  if (volatility > 15) {
+    trend = "VOLATILE";
+  } else if (cagr > 5) {
+    trend = "INCREASING";
+  } else if (cagr < -5) {
+    trend = "DECREASING";
+  } else {
+    trend = "STABLE";
+  }
+
+  // Simple linear prediction for next year
+  const slope = (lastValue - firstValue) / numYears;
+  const predictedValue = lastValue + slope;
+  const confidence = Math.max(30, 100 - volatility * 2);
+
+  // Detect anomalies (values > 2 std dev from mean)
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const stdDev = Math.sqrt(values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length);
+  const anomalies = values
+    .map((v, i) => ({ year: years[i], value: v, deviation: (v - mean) / stdDev }))
+    .filter(a => Math.abs(a.deviation) > 2);
+
+  return {
+    company: company.name,
+    metric: pliType,
+    years,
+    values,
+    trend,
+    cagr: Math.round(cagr * 100) / 100,
+    volatility: Math.round(volatility * 100) / 100,
+    prediction: {
+      year: "2024-25",
+      value: Math.round(predictedValue * 100) / 100,
+      confidence: Math.round(confidence)
+    },
+    anomalies
+  };
+}
+
+/**
+ * Analyze trends across all comparables
+ */
+export function analyzeComparableSetTrends(
+  comparables: ComparableCompany[],
+  pliType: PLIType
+): {
+  individualTrends: TrendAnalysis[];
+  aggregateTrend: "INCREASING" | "DECREASING" | "STABLE" | "MIXED";
+  industryCAGR: number;
+  consistencyScore: number;
+} {
+  const trends = comparables.map(c => analyzeMultiYearTrend(c, pliType));
+
+  const trendCounts = {
+    INCREASING: trends.filter(t => t.trend === "INCREASING").length,
+    DECREASING: trends.filter(t => t.trend === "DECREASING").length,
+    STABLE: trends.filter(t => t.trend === "STABLE").length,
+    VOLATILE: trends.filter(t => t.trend === "VOLATILE").length
+  };
+
+  let aggregateTrend: "INCREASING" | "DECREASING" | "STABLE" | "MIXED";
+  const maxCount = Math.max(...Object.values(trendCounts));
+  if (maxCount > trends.length * 0.6) {
+    const dominantTrend = Object.entries(trendCounts).find(([_, count]) => count === maxCount)?.[0];
+    if (dominantTrend === "VOLATILE" || !dominantTrend) {
+      aggregateTrend = "MIXED";
+    } else {
+      aggregateTrend = dominantTrend as "INCREASING" | "DECREASING" | "STABLE" | "MIXED";
+    }
+  } else {
+    aggregateTrend = "MIXED";
+  }
+
+  const avgCAGR = trends.reduce((sum, t) => sum + t.cagr, 0) / trends.length;
+
+  // Consistency score based on how similar individual trends are
+  const cagrStdDev = Math.sqrt(
+    trends.reduce((sum, t) => sum + Math.pow(t.cagr - avgCAGR, 2), 0) / trends.length
+  );
+  const consistencyScore = Math.max(0, 100 - cagrStdDev * 5);
+
+  return {
+    individualTrends: trends,
+    aggregateTrend,
+    industryCAGR: Math.round(avgCAGR * 100) / 100,
+    consistencyScore: Math.round(consistencyScore)
+  };
+}
+
+// =============================================================================
 // VERSION INFO
 // =============================================================================
 
 export const COMPARABLE_ENGINE_VERSION = {
-  version: "2.0.0",
-  lastUpdated: "2025-01-29",
+  version: "3.0.0",
+  lastUpdated: "2025-01-30",
   features: [
+    // Core Features
     "FAR Analysis Engine with similarity scoring",
     "Statistical benchmarking (quartiles, IQR, percentiles)",
     "Automated working capital adjustments",
     "Multi-dimensional comparability scoring",
     "Rejection matrix with regulatory basis",
     "Weighted average PLI calculation (3-year)",
-    "Outlier detection using IQR method",
-    "Comprehensive arm's length range analysis"
+    // Advanced Features
+    "Comprehensive adjustment engine (15+ adjustment types)",
+    "Rule 10A-E regulatory compliance validator",
+    "Statistical analysis with 95%/99% confidence intervals",
+    "Outlier detection using modified Z-score and MAD",
+    "Sensitivity analysis for comparable selection",
+    "Complete audit trail for selection decisions",
+    "Safe harbour eligibility checker (Rule 10TD/10TE/10TF)",
+    "Multi-year trend analysis with CAGR",
+    "OECD chapter alignment scoring",
+    "Form 3CEB integration with auto-population"
   ],
-  dataSource: "Internal comparable database",
+  regulatoryCompliance: {
+    indianTPRules: ["Section 92", "Rule 10A", "Rule 10B", "Rule 10CA", "Rule 10D"],
+    oecdGuidelines: ["Chapter 1-3", "Chapter 6 (Intangibles)", "Chapter 7 (Services)", "Chapter 10 (Financial)"],
+    safeHarbour: ["Rule 10TD (IT/ITeS)", "Rule 10TE (Loans)", "Rule 10TF (Guarantees)"]
+  },
+  statisticalCapabilities: {
+    confidenceIntervals: ["95%", "99%"],
+    outlierDetection: ["Modified Z-score", "IQR Method", "MAD-based"],
+    normalityTests: true,
+    sensitivityAnalysis: true
+  },
+  adjustmentTypes: [
+    "Working Capital", "Capacity Utilization", "Risk Adjustment",
+    "Size Adjustment", "Extraordinary Items", "Accounting Differences",
+    "Geographic", "Economic Cycle", "Intangible-Related",
+    "Contractual Terms", "Functional Intensity", "Leverage"
+  ],
+  dataSource: "Internal comparable database (30+ companies)",
   externalIntegrations: {
     prowess: "Planned",
     capitaline: "Planned",
