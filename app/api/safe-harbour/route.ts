@@ -1,201 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Safe Harbour Rules as per Rule 10TD/10TE/10TF
-interface SafeHarbourThreshold {
-  condition: string;
-  margin: number | null;
-  rate?: string;
-}
-
-interface SafeHarbourRule {
-  name: string;
-  marginType: string;
-  thresholds: SafeHarbourThreshold[];
-  applicableTransactions: string[];
-  maxTurnover: number | null;
-}
-
-const SAFE_HARBOUR_RULES: Record<string, SafeHarbourRule> = {
-  IT_ITES: {
-    name: "IT & IT Enabled Services",
-    marginType: "OP/OC",
-    thresholds: [
-      { condition: "Normal case", margin: 17 },
-    ],
-    applicableTransactions: ["03", "04", "13"],
-    maxTurnover: null,
-  },
-  KPO: {
-    name: "Knowledge Process Outsourcing",
-    marginType: "OP/OC",
-    thresholds: [
-      { condition: "Employee cost < 60% of total cost", margin: 18 },
-      { condition: "Employee cost >= 60% but < 80% of total cost", margin: 21 },
-      { condition: "Employee cost >= 80% of total cost", margin: 24 },
-    ],
-    applicableTransactions: ["03", "04", "13"],
-    maxTurnover: null,
-  },
-  CONTRACT_RD: {
-    name: "Contract R&D - Wholly or Partly Software",
-    marginType: "OP/OC",
-    thresholds: [
-      { condition: "Normal case", margin: 24 },
-    ],
-    applicableTransactions: ["05", "06"],
-    maxTurnover: null,
-  },
-  CONTRACT_RD_GENERIC: {
-    name: "Contract R&D - Generic Pharma",
-    marginType: "OP/OC",
-    thresholds: [
-      { condition: "Normal case", margin: 24 },
-    ],
-    applicableTransactions: ["05", "06"],
-    maxTurnover: null,
-  },
-  AUTO_ANCILLARY: {
-    name: "Auto Ancillary",
-    marginType: "OP/OC",
-    thresholds: [
-      { condition: "Normal case", margin: 12 },
-    ],
-    applicableTransactions: ["01", "02"],
-    maxTurnover: null,
-  },
-  INTRA_GROUP_LOAN: {
-    name: "Intra-Group Loan (INR denominated)",
-    marginType: "Interest Rate",
-    thresholds: [
-      { condition: "Where AE has rating", margin: null, rate: "SBI base rate + 150bps" },
-      { condition: "Where AE has no rating", margin: null, rate: "SBI base rate + 300bps" },
-    ],
-    applicableTransactions: ["20"],
-    maxTurnover: null,
-  },
-  CORPORATE_GUARANTEE: {
-    name: "Corporate Guarantee",
-    marginType: "Commission Rate",
-    thresholds: [
-      { condition: "Up to Rs. 100 Crore", margin: null, rate: "2%" },
-      { condition: "Above Rs. 100 Crore", margin: null, rate: "1.75%" },
-    ],
-    applicableTransactions: ["21"],
-    maxTurnover: null,
-  },
-  LOW_VALUE_SERVICES: {
-    name: "Low Value-Adding Intra-Group Services",
-    marginType: "Markup on Cost",
-    thresholds: [
-      { condition: "Normal case", margin: 5 },
-    ],
-    applicableTransactions: ["03", "04"],
-    maxTurnover: null,
-  },
-};
-
-interface SafeHarbourRequest {
-  transactionType: string;
-  operatingCost: number;
-  operatingProfit: number;
-  employeeCost?: number;
-  totalCost?: number;
-  loanAmount?: number;
-  guaranteeAmount?: number;
-  aeHasRating?: boolean;
-}
-
-interface SafeHarbourResult {
-  eligible: boolean;
-  rule: string;
-  requiredMargin: number | string;
-  actualMargin: number;
-  marginType: string;
-  compliance: "compliant" | "non_compliant" | "review_required";
-  explanation: string;
-  recommendations: string[];
-}
-
-function calculateSafeHarbour(data: SafeHarbourRequest): SafeHarbourResult {
-  const rule = SAFE_HARBOUR_RULES[data.transactionType];
-
-  if (!rule) {
-    return {
-      eligible: false,
-      rule: "Unknown",
-      requiredMargin: 0,
-      actualMargin: 0,
-      marginType: "N/A",
-      compliance: "review_required",
-      explanation: "Transaction type not covered under Safe Harbour provisions",
-      recommendations: ["Apply standard transfer pricing methods (TNMM/CUP/RPM/CPM)"],
-    };
-  }
-
-  let actualMargin = 0;
-  let requiredMargin: number | string = 0;
-  let threshold: SafeHarbourThreshold = rule.thresholds[0];
-
-  // Calculate actual margin based on margin type
-  if (rule.marginType === "OP/OC") {
-    actualMargin = (data.operatingProfit / data.operatingCost) * 100;
-
-    // For KPO, determine threshold based on employee cost ratio
-    if (data.transactionType === "KPO" && data.employeeCost && data.totalCost) {
-      const employeeRatio = (data.employeeCost / data.totalCost) * 100;
-      if (employeeRatio < 60) {
-        threshold = rule.thresholds[0];
-      } else if (employeeRatio < 80) {
-        threshold = rule.thresholds[1];
-      } else {
-        threshold = rule.thresholds[2];
-      }
-    }
-
-    requiredMargin = threshold.margin ?? 0;
-  } else if (rule.marginType === "Markup on Cost") {
-    actualMargin = (data.operatingProfit / data.operatingCost) * 100;
-    requiredMargin = threshold.margin ?? 0;
-  } else if (rule.marginType === "Interest Rate" || rule.marginType === "Commission Rate") {
-    // For loan and guarantee, margin is the rate
-    requiredMargin = threshold.rate ?? "As per rule";
-    actualMargin = 0; // Would need actual rate input
-  }
-
-  const eligible = rule.marginType === "OP/OC" || rule.marginType === "Markup on Cost"
-    ? actualMargin >= (typeof requiredMargin === "number" ? requiredMargin : 0)
-    : true;
-
-  const compliance = eligible ? "compliant" : "non_compliant";
-
-  const explanation = eligible
-    ? `Transaction qualifies for Safe Harbour under Rule 10TD. Actual margin of ${actualMargin.toFixed(2)}% meets the minimum threshold of ${requiredMargin}%.`
-    : `Transaction does NOT qualify for Safe Harbour. Actual margin of ${actualMargin.toFixed(2)}% is below the required ${requiredMargin}%. Additional documentation required.`;
-
-  const recommendations = eligible
-    ? [
-        "Maintain contemporaneous documentation",
-        "Ensure all conditions under Rule 10TD are satisfied",
-        "File Form 3CEFA within due date",
-      ]
-    : [
-        "Prepare comprehensive benchmarking study",
-        "Consider adjusting intercompany pricing",
-        "Document functional analysis thoroughly",
-        "Maintain supporting evidence for pricing",
-      ];
-
-  return {
-    eligible,
-    rule: rule.name,
-    requiredMargin,
-    actualMargin: Math.round(actualMargin * 100) / 100,
-    marginType: rule.marginType,
-    compliance,
-    explanation,
-    recommendations,
-  };
-}
+import {
+  SafeHarbourCalculator,
+  TransactionType,
+  CreditRating,
+  Currency,
+  SAFE_HARBOUR_RULES,
+} from "@/lib/engines";
 
 // POST /api/safe-harbour - Calculate Safe Harbour eligibility
 export async function POST(request: NextRequest) {
@@ -204,13 +14,17 @@ export async function POST(request: NextRequest) {
 
     const {
       transactionType,
+      assessmentYear = "2025-26",
       operatingCost,
+      operatingRevenue,
       operatingProfit,
       employeeCost,
       totalCost,
+      transactionValue,
       loanAmount,
+      creditRating,
+      loanCurrency = "INR",
       guaranteeAmount,
-      aeHasRating,
     } = body;
 
     // Validate required fields
@@ -221,25 +35,129 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (operatingCost === undefined || operatingProfit === undefined) {
-      return NextResponse.json(
-        { error: "Operating cost and profit are required" },
-        { status: 400 }
-      );
-    }
+    // Map transaction type string to enum (new simplified names)
+    const txnTypeMap: Record<string, TransactionType> = {
+      // IT/ITeS
+      IT_ITES: TransactionType.IT_ITES,
+      IT_ITES_SERVICES: TransactionType.IT_ITES,
+      it_ites: TransactionType.IT_ITES,
+      // KPO
+      KPO: TransactionType.KPO,
+      KPO_SERVICES: TransactionType.KPO,
+      kpo: TransactionType.KPO,
+      // Contract R&D Software
+      CONTRACT_RD: TransactionType.CONTRACT_RD_SOFTWARE,
+      CONTRACT_RD_SOFTWARE: TransactionType.CONTRACT_RD_SOFTWARE,
+      contract_rd_software: TransactionType.CONTRACT_RD_SOFTWARE,
+      // Contract R&D Pharma
+      CONTRACT_RD_PHARMA: TransactionType.CONTRACT_RD_PHARMA,
+      CONTRACT_RD_GENERIC: TransactionType.CONTRACT_RD_PHARMA,
+      contract_rd_pharma: TransactionType.CONTRACT_RD_PHARMA,
+      // Auto Ancillary
+      AUTO_ANCILLARY: TransactionType.AUTO_ANCILLARY,
+      AUTO_ANCILLARY_MANUFACTURING: TransactionType.AUTO_ANCILLARY,
+      auto_ancillary: TransactionType.AUTO_ANCILLARY,
+      // Loan FC
+      INTRA_GROUP_LOAN_FC: TransactionType.LOAN_FOREIGN_CURRENCY,
+      LOAN_FOREIGN_CURRENCY: TransactionType.LOAN_FOREIGN_CURRENCY,
+      INTRA_GROUP_LOAN_GIVEN_FC: TransactionType.LOAN_FOREIGN_CURRENCY,
+      loan_foreign_currency: TransactionType.LOAN_FOREIGN_CURRENCY,
+      // Loan INR
+      INTRA_GROUP_LOAN: TransactionType.LOAN_INR,
+      INTRA_GROUP_LOAN_INR: TransactionType.LOAN_INR,
+      INTRA_GROUP_LOAN_GIVEN_INR: TransactionType.LOAN_INR,
+      LOAN_INR: TransactionType.LOAN_INR,
+      loan_inr: TransactionType.LOAN_INR,
+      // Corporate Guarantee
+      CORPORATE_GUARANTEE: TransactionType.CORPORATE_GUARANTEE,
+      corporate_guarantee: TransactionType.CORPORATE_GUARANTEE,
+    };
 
-    const result = calculateSafeHarbour({
-      transactionType,
-      operatingCost,
-      operatingProfit,
-      employeeCost,
-      totalCost,
-      loanAmount,
-      guaranteeAmount,
-      aeHasRating,
-    });
+    const mappedTransactionType = txnTypeMap[transactionType] || transactionType;
 
-    return NextResponse.json({ result });
+    // Map credit rating
+    const creditRatingMap: Record<string, CreditRating> = {
+      AAA: CreditRating.AAA,
+      AA: CreditRating.AA,
+      A: CreditRating.A,
+      BBB: CreditRating.BBB,
+      BB: CreditRating.BB,
+      B: CreditRating.B,
+      C: CreditRating.C,
+      D: CreditRating.D,
+      C_AND_BELOW: CreditRating.C,
+    };
+
+    // Map currency
+    const currencyMap: Record<string, Currency> = {
+      INR: Currency.INR,
+      USD: Currency.USD,
+      EUR: Currency.EUR,
+      GBP: Currency.GBP,
+      JPY: Currency.JPY,
+    };
+
+    // Create calculator
+    const calculator = new SafeHarbourCalculator(assessmentYear);
+
+    // Prepare financial data
+    const financialData = {
+      assessmentYear,
+      totalRevenue: operatingRevenue || 0,
+      operatingRevenue: operatingRevenue || 0,
+      totalOperatingCost: operatingCost || totalCost || 0,
+      employeeCost: employeeCost || 0,
+      transactionValue: transactionValue || operatingRevenue || 0,
+      loanAmount: loanAmount || 0,
+      creditRating: creditRating ? creditRatingMap[creditRating] : undefined,
+      loanCurrency: currencyMap[loanCurrency] || Currency.INR,
+      guaranteeAmount: guaranteeAmount || 0,
+    };
+
+    // Calculate eligibility
+    const result = calculator.calculateEligibility(
+      mappedTransactionType as TransactionType,
+      financialData
+    );
+
+    // Get rule description safely
+    const rule = SAFE_HARBOUR_RULES[mappedTransactionType as keyof typeof SAFE_HARBOUR_RULES];
+    const ruleDescription = rule?.description || rule?.name || "Unknown";
+
+    // Format response with backward compatibility
+    const response = {
+      result: {
+        eligible: result.isEligible,
+        meetsSafeHarbour: result.meetsSafeHarbour,
+        rule: ruleDescription,
+        requiredMargin: result.requiredMargin || result.requiredInterestRate || result.requiredGuaranteeCommission,
+        actualMargin: result.actualMargin,
+        marginType: result.requiredInterestRate ? "Interest Rate" :
+                    result.requiredGuaranteeCommission ? "Commission Rate" : "OP/OC",
+        compliance: result.meetsSafeHarbour ? "compliant" : "non_compliant",
+        explanation: result.complianceDetails,
+        recommendation: result.recommendation,
+        recommendations: result.meetsSafeHarbour
+          ? [
+              "Maintain contemporaneous documentation",
+              "Ensure all conditions under Rule 10TD are satisfied",
+              "File Form 3CEFA within due date",
+            ]
+          : [
+              "Prepare comprehensive benchmarking study",
+              "Consider adjusting intercompany pricing",
+              "Document functional analysis thoroughly",
+              "Maintain supporting evidence for pricing",
+            ],
+        conditions: result.conditions,
+        form3cefaData: result.form3cefaData,
+        marginGap: result.marginGap,
+        thresholdDetails: result.thresholdDetails,
+        eligibilityReason: result.eligibilityReason,
+      },
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error calculating safe harbour:", error);
     return NextResponse.json(
@@ -251,5 +169,28 @@ export async function POST(request: NextRequest) {
 
 // GET /api/safe-harbour/rules - Get all Safe Harbour rules
 export async function GET() {
-  return NextResponse.json({ rules: SAFE_HARBOUR_RULES });
+  // Format rules for display
+  const formattedRules: Record<string, unknown> = {};
+
+  for (const [key, rule] of Object.entries(SAFE_HARBOUR_RULES)) {
+    formattedRules[key] = {
+      name: rule.name,
+      description: rule.description,
+      section: rule.section,
+      marginType: rule.marginType,
+      thresholds: rule.thresholds?.map((t) => ({
+        condition: t.condition,
+        margin: t.margin || null,
+        spread: t.spread || null,
+        rate: t.rate || null,
+      })) || [],
+      maxTransactionValue: rule.maxTransactionValue,
+      eligibilityConditions: rule.eligibilityConditions,
+      validFrom: rule.validFrom,
+      validTo: rule.validTo,
+      notes: rule.notes,
+    };
+  }
+
+  return NextResponse.json({ rules: formattedRules });
 }

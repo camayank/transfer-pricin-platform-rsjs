@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  BenchmarkingEngine,
+  PLIType,
+  FunctionalProfile,
+  NIC_CODES,
+  type SearchCriteria,
+  type BenchmarkingFinancialData as FinancialData,
+} from "@/lib/engines";
 
 interface Comparable {
   id: string;
   name: string;
+  cin?: string;
   country: string;
   industry: string;
   nicCode: string;
@@ -11,16 +20,31 @@ interface Comparable {
   operatingCost: number;
   totalAssets: number;
   employees: number;
-  opMargin: number; // OP/OR
-  opCostMargin: number; // OP/OC
-  roce: number; // Return on Capital Employed
+  opMargin: number;
+  opCostMargin: number;
+  roce: number;
   selected: boolean;
 }
 
 interface BenchmarkingRequest {
-  comparables: Comparable[];
-  testedPartyMargin: number;
-  pliType: "OP/OC" | "OP/OR" | "ROCE" | "Berry Ratio";
+  comparables?: Comparable[];
+  testedPartyMargin?: number;
+  pliType: "OP/OC" | "OP/OR" | "ROCE" | "Berry Ratio" | "OP/TA" | "OP/CE";
+  testedPartyName?: string;
+  testedPartyFinancials?: {
+    year: string;
+    operatingRevenue: number;
+    totalOperatingCost: number;
+    operatingProfit: number;
+    totalAssets?: number;
+    capitalEmployed?: number;
+  }[];
+  searchCriteria?: {
+    nicCodes?: string[];
+    functionalProfiles?: string[];
+    maxRptPercentage?: number;
+    analysisYears?: string[];
+  };
 }
 
 interface StatisticalRange {
@@ -46,11 +70,9 @@ function calculateStatisticalRange(values: number[]): StatisticalRange {
     };
   }
 
-  // Sort values
   const sorted = [...values].sort((a, b) => a - b);
   const n = sorted.length;
 
-  // Calculate quartiles using inclusive method
   const getPercentile = (arr: number[], p: number): number => {
     const index = (p / 100) * (arr.length - 1);
     const lower = Math.floor(index);
@@ -121,8 +143,121 @@ function determineArmLengthCompliance(
 export async function POST(request: NextRequest) {
   try {
     const body: BenchmarkingRequest = await request.json();
-    const { comparables, testedPartyMargin, pliType } = body;
+    const { comparables, testedPartyMargin, pliType, testedPartyName, testedPartyFinancials, searchCriteria } = body;
 
+    // Map PLI type
+    const pliTypeMap: Record<string, PLIType> = {
+      "OP/OC": PLIType.OP_OC,
+      "OP/OR": PLIType.OP_OR,
+      "ROCE": PLIType.OP_CE,
+      "OP/TA": PLIType.OP_TA,
+      "OP/CE": PLIType.OP_CE,
+      "Berry Ratio": PLIType.BERRY_RATIO,
+    };
+
+    // If using the engine for automated search
+    if (testedPartyName && testedPartyFinancials && searchCriteria) {
+      const engine = new BenchmarkingEngine();
+
+      // Convert tested party financials
+      const financials: Record<string, FinancialData> = {};
+      for (const fin of testedPartyFinancials) {
+        financials[fin.year] = {
+          year: fin.year,
+          totalRevenue: fin.operatingRevenue,
+          operatingRevenue: fin.operatingRevenue,
+          exportRevenue: 0,
+          totalOperatingCost: fin.totalOperatingCost,
+          employeeCost: 0,
+          rawMaterialCost: 0,
+          otherExpenses: 0,
+          depreciation: 0,
+          grossProfit: fin.operatingRevenue - fin.totalOperatingCost * 0.3,
+          operatingProfit: fin.operatingProfit,
+          pbt: fin.operatingProfit,
+          pat: fin.operatingProfit * 0.75,
+          totalAssets: fin.totalAssets || fin.operatingRevenue * 0.8,
+          fixedAssets: fin.totalAssets ? fin.totalAssets * 0.4 : fin.operatingRevenue * 0.3,
+          currentAssets: fin.totalAssets ? fin.totalAssets * 0.6 : fin.operatingRevenue * 0.5,
+          capitalEmployed: fin.capitalEmployed || (fin.totalAssets || fin.operatingRevenue * 0.8) * 0.7,
+          netWorth: fin.operatingRevenue * 0.4,
+          employeeCount: 0,
+          relatedPartyTransactions: 0,
+          rptAsPercentage: 0,
+        };
+      }
+
+      // Build search criteria
+      const criteria: SearchCriteria = {
+        nicCodes: searchCriteria.nicCodes || ["6201", "6202"],
+        industryKeywords: [],
+        functionalProfiles: (searchCriteria.functionalProfiles || []).map(
+          (fp) => fp as FunctionalProfile
+        ),
+        excludePersistentLosses: true,
+        lossYearsThreshold: 2,
+        maxRptPercentage: searchCriteria.maxRptPercentage || 25,
+        analysisYears: searchCriteria.analysisYears || ["2021-22", "2022-23", "2023-24"],
+        preferredDatabases: [],
+      };
+
+      const result = engine.performBenchmarking(
+        testedPartyName,
+        financials,
+        pliTypeMap[pliType] || PLIType.OP_OC,
+        criteria
+      );
+
+      const report = engine.generateBenchmarkingReport(result);
+
+      return NextResponse.json({
+        analysis: {
+          pliType,
+          numberOfComparables: result.comparablesAccepted,
+          testedPartyMargin: Object.values(result.testedPartyPLI)[0] || 0,
+          statisticalRange: {
+            min: result.minimum,
+            q1: result.lowerQuartile,
+            median: result.median,
+            q3: result.upperQuartile,
+            max: result.maximum,
+            mean: result.arithmeticMean,
+            interquartileRange: result.upperQuartile - result.lowerQuartile,
+          },
+          compliance: {
+            compliant: result.testedPartyInRange,
+            position: result.adjustmentDirection === "increase" ? "below" :
+                     result.adjustmentDirection === "decrease" ? "above" : "within",
+            adjustmentRequired: result.adjustmentAmount,
+            explanation: result.testedPartyInRange
+              ? `Tested party is within arm's length range`
+              : `Adjustment of ${result.adjustmentAmount.toFixed(2)}% required to ${result.adjustmentDirection} to median`,
+          },
+          comparables: result.acceptedCompanies.map((c) => ({
+            name: c.name,
+            cin: c.cin,
+            nicCode: c.nicCode,
+            pliValue: c.weightedAveragePLI[pliTypeMap[pliType] || PLIType.OP_OC] || 0,
+          })),
+          rejectedComparables: result.rejectedCompanies.map((c) => ({
+            name: c.name,
+            cin: c.cin,
+            rejectionReasons: c.rejectionReasons,
+          })),
+        },
+        report,
+        summary: {
+          method: "Transactional Net Margin Method (TNMM)",
+          pli: pliType,
+          armLengthRange: `${result.lowerQuartile.toFixed(2)}% - ${result.upperQuartile.toFixed(2)}%`,
+          median: `${result.median.toFixed(2)}%`,
+          testedPartyResult: result.testedPartyInRange ? "At Arm's Length" : "Adjustment Required",
+          adjustmentIfAny: result.adjustmentRequired ? `${result.adjustmentAmount.toFixed(2)}%` : "None",
+        },
+      });
+    }
+
+    // Legacy mode: Use provided comparables
     if (!comparables || comparables.length === 0) {
       return NextResponse.json(
         { error: "At least one comparable is required" },
@@ -130,7 +265,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get selected comparables
     const selectedComparables = comparables.filter((c) => c.selected);
 
     if (selectedComparables.length < 3) {
@@ -140,7 +274,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract PLI values based on type
     let pliValues: number[];
     switch (pliType) {
       case "OP/OC":
@@ -150,19 +283,16 @@ export async function POST(request: NextRequest) {
         pliValues = selectedComparables.map((c) => c.opMargin);
         break;
       case "ROCE":
+      case "OP/CE":
         pliValues = selectedComparables.map((c) => c.roce);
         break;
       default:
         pliValues = selectedComparables.map((c) => c.opCostMargin);
     }
 
-    // Calculate statistical range
     const statisticalRange = calculateStatisticalRange(pliValues);
+    const compliance = determineArmLengthCompliance(testedPartyMargin || 0, statisticalRange);
 
-    // Determine arm's length compliance
-    const compliance = determineArmLengthCompliance(testedPartyMargin, statisticalRange);
-
-    // Prepare comparable analysis
     const comparableAnalysis = selectedComparables.map((c) => {
       const pliValue = pliType === "OP/OC" ? c.opCostMargin : pliType === "OP/OR" ? c.opMargin : c.roce;
       return {
@@ -201,7 +331,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/benchmarking/comparables - Get sample comparables (in real app, this would query a database)
+// GET /api/benchmarking/comparables - Get sample comparables
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const industry = searchParams.get("industry");
@@ -212,6 +342,7 @@ export async function GET(request: NextRequest) {
     {
       id: "1",
       name: "Infosys BPM Ltd",
+      cin: "U72200KA2005PTC036747",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -228,6 +359,7 @@ export async function GET(request: NextRequest) {
     {
       id: "2",
       name: "Wipro Technologies",
+      cin: "U72200MH2000PTC125612",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -244,6 +376,7 @@ export async function GET(request: NextRequest) {
     {
       id: "3",
       name: "Tech Mahindra",
+      cin: "U72200MH1986PLC041370",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -260,6 +393,7 @@ export async function GET(request: NextRequest) {
     {
       id: "4",
       name: "HCL Technologies",
+      cin: "L74140DL1991PLC046369",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -276,6 +410,7 @@ export async function GET(request: NextRequest) {
     {
       id: "5",
       name: "L&T Infotech",
+      cin: "U72900MH1996PLC104693",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -292,6 +427,7 @@ export async function GET(request: NextRequest) {
     {
       id: "6",
       name: "Mphasis Ltd",
+      cin: "L30007KA1992PLC025294",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -308,6 +444,7 @@ export async function GET(request: NextRequest) {
     {
       id: "7",
       name: "Coforge Ltd",
+      cin: "L72200DL1992PLC048753",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -324,6 +461,7 @@ export async function GET(request: NextRequest) {
     {
       id: "8",
       name: "Persistent Systems",
+      cin: "L72300PN1990PLC056696",
       country: "India",
       industry: "IT Services",
       nicCode: "6201",
@@ -339,7 +477,6 @@ export async function GET(request: NextRequest) {
     },
   ];
 
-  // Filter by industry/NIC code if provided
   let filtered = sampleComparables;
   if (industry) {
     filtered = filtered.filter((c) =>
@@ -350,5 +487,8 @@ export async function GET(request: NextRequest) {
     filtered = filtered.filter((c) => c.nicCode === nicCode);
   }
 
-  return NextResponse.json({ comparables: filtered });
+  return NextResponse.json({
+    comparables: filtered,
+    nicCodes: NIC_CODES,
+  });
 }
