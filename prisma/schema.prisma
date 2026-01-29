@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & FIRM ==============
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  password         String?
+  image            String?
+  role             Role      @default(ASSOCIATE)
+  firmId           String?
+  firm             Firm?     @relation(fields: [firmId], references: [id])
+  assignedClients  Client[]  @relation("AssignedTo")
+  reviewingClients Client[]  @relation("Reviewer")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Firm {
+  id                 String   @id @default(cuid())
+  name               String
+  registrationNumber String?  @unique
+  email              String?
+  phone              String?
+  address            String?
+  plan               Plan     @default(STARTER)
+  maxClients         Int      @default(10)
+  users              User[]
+  clients            Client[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ============== CLIENT & ENGAGEMENT ==============
+
+model Client {
+  id             String       @id @default(cuid())
+  name           String
+  pan            String
+  tan            String?
+  cin            String?
+  industry       String?
+  nicCode        String?
+  nicDescription String?
+  contactPerson  String?
+  contactEmail   String?
+  contactPhone   String?
+  address        String?
+  city           String?
+  state          String?
+  pincode        String?
+  country        String?      @default("India")
+  website        String?
+
+  // Group Structure
+  parentCompany          String?
+  parentCountry          String?
+  ultimateParent         String?
+  ultimateParentCountry  String?
+  consolidatedRevenue    Decimal? @db.Decimal(18, 2)
+
+  // Relationships
+  firmId       String
+  firm         Firm         @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  assignedToId String?
+  assignedTo   User?        @relation("AssignedTo", fields: [assignedToId], references: [id])
+  reviewerId   String?
+  reviewer     User?        @relation("Reviewer", fields: [reviewerId], references: [id])
+  engagements  Engagement[]
+  documents    Document[]   @relation("ClientDocuments")
+
+  // Metadata
+  status    String   @default("active")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pan, firmId])
+}
+
+model Engagement {
+  id               String           @id @default(cuid())
+  clientId         String
+  client           Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  financialYear    String // "2025-26"
+  assessmentYear   String // "2026-27"
+  status           EngagementStatus @default(NOT_STARTED)
+  priority         Priority         @default(MEDIUM)
+  notes            String?
+  assignedToId     String?
+
+  // Financial Data (from Tally/Zoho)
+  financialData   Json?
+  totalRevenue    Decimal? @db.Decimal(18, 2)
+  operatingCost   Decimal? @db.Decimal(18, 2)
+  operatingProfit Decimal? @db.Decimal(18, 2)
+  employeeCost    Decimal? @db.Decimal(18, 2)
+
+  // PLIs
+  opOc       Decimal? @db.Decimal(8, 4) // OP/OC margin
+  opOr       Decimal? @db.Decimal(8, 4) // OP/OR margin
+  berryRatio Decimal? @db.Decimal(8, 4)
+
+  // Safe Harbour Analysis
+  safeHarbourEligible Boolean?
+  safeHarbourAnalysis Json?
+
+  // Benchmarking
+  benchmarkingCompleted Boolean  @default(false)
+  benchmarkingResults   Json?
+  armLengthRange        Json?
+  adjustmentRequired    Boolean?
+  adjustmentAmount      Decimal? @db.Decimal(18, 2)
+
+  // Related Party Info
+  totalRptValue         Decimal? @db.Decimal(18, 2)
+  associatedEnterprises Json? // Array of AEs
+  internationalTxns     Json? // Array of transactions
+
+  // Documents
+  documents Document[]
+
+  // Dates
+  dueDate   DateTime?
+  filedDate DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([clientId, financialYear])
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  engagementId String?
+  engagement   Engagement?  @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  clientId     String?
+  client       Client?      @relation("ClientDocuments", fields: [clientId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  status       DocStatus    @default(DRAFT)
+  name         String?
+
+  // Document Data
+  data             Json? // Form data as JSON
+  validationErrors Json? // Validation issues
+
+  // File Info
+  fileName String?
+  filePath String?
+  fileSize Int?
+
+  // E-Filing
+  acknowledgmentNo String?
+  udin             String?
+
+  // Timestamps
+  uploadedAt  DateTime  @default(now())
+  generatedAt DateTime?
+  filedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ============== ENUMS ==============
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PARTNER
+  SENIOR_MANAGER
+  MANAGER
+  ASSOCIATE
+  TRAINEE
+}
+
+enum Plan {
+  STARTER // 10 clients
+  PROFESSIONAL // 50 clients
+  ENTERPRISE // Unlimited
+}
+
+enum EngagementStatus {
+  NOT_STARTED
+  DATA_COLLECTION
+  SAFE_HARBOUR_CHECK
+  BENCHMARKING
+  DOCUMENTATION
+  REVIEW
+  APPROVED
+  FILED
+  COMPLETED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum DocumentType {
+  FORM_3CEB
+  FORM_3CEFA // Safe Harbour
+  FORM_3CEAA // Master File
+  FORM_3CEAB // Part B of Master File
+  FORM_3CEAC // Part C of Master File
+  FORM_3CEAD // CbCR
+  LOCAL_FILE
+  BENCHMARKING_REPORT
+}
+
+enum DocStatus {
+  DRAFT
+  IN_PROGRESS
+  PENDING_REVIEW
+  REVIEW
+  APPROVED
+  FILED
+}
