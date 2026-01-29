@@ -13,7 +13,7 @@ import { createForexEngine } from '../forex-engine';
 import { createInterestRateEngine } from '../interest-rate-engine';
 import { createEfilingEngine } from '../efiling-engine';
 import { createDSCSigningEngine } from '../dsc-signing-engine';
-import { SafeHarbourCalculator, SAFE_HARBOUR_RULES } from '../safe-harbour-engine';
+import { SafeHarbourCalculator, SAFE_HARBOUR_RULES, TransactionType } from '../safe-harbour-engine';
 import { createForm3CEBBuilder, createForm3CEBValidator } from '../form-3ceb-engine';
 
 describe('Transfer Pricing Platform Integration Tests', () => {
@@ -69,7 +69,8 @@ describe('Transfer Pricing Platform Integration Tests', () => {
 
   describe('Safe Harbour Rate Verification', () => {
     test('IT/ITeS safe harbour rate should be 20% (FY 2023-24 onwards)', () => {
-      const itItesRule = SAFE_HARBOUR_RULES['IT_ITES'];
+      // Use TransactionType enum for correct key lookup
+      const itItesRule = SAFE_HARBOUR_RULES[TransactionType.IT_ITES];
       expect(itItesRule).toBeDefined();
 
       // Check that the normal case threshold is 20%
@@ -80,7 +81,7 @@ describe('Transfer Pricing Platform Integration Tests', () => {
     });
 
     test('KPO safe harbour rates should be tiered based on employee cost ratio', () => {
-      const kpoRule = SAFE_HARBOUR_RULES['KPO'];
+      const kpoRule = SAFE_HARBOUR_RULES[TransactionType.KPO];
       expect(kpoRule).toBeDefined();
       expect(kpoRule.thresholds.length).toBeGreaterThanOrEqual(3);
     });
@@ -174,7 +175,9 @@ describe('Transfer Pricing Platform Integration Tests', () => {
     test('Safe harbour eligibility should align with comparable search thresholds', () => {
       // This validates that the safe harbour rates in SAFE_HARBOUR_RULES
       // match what comparable-search-engine uses for eligibility checks
-      const itItesRule = SAFE_HARBOUR_RULES['IT_ITES'];
+      const itItesRule = SAFE_HARBOUR_RULES[TransactionType.IT_ITES];
+      expect(itItesRule).toBeDefined();
+
       const normalMargin = itItesRule.thresholds.find((t: { condition: string; margin: number | string }) =>
         t.condition.toLowerCase().includes('normal')
       )?.margin;
