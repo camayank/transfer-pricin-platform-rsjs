@@ -312,14 +312,210 @@ export {
 } from "./analytics-ai";
 
 // =============================================================================
+// OECD GUIDELINES REFERENCE ENGINE
+// =============================================================================
+
+export {
+  OECDReferenceEngine,
+  createOECDReferenceEngine,
+  OECD_GUIDELINES_VERSION,
+  OECD_GUIDELINES,
+  OECD_CHAPTERS,
+  getAllChapterTitles,
+  getGuidelinesForMethod,
+  getGuidelinesForTransactionType,
+  type OECDGuideline,
+  type OECDChapter,
+  type OECDSearchQuery,
+  type OECDSearchResults,
+  type GuidelineSearchResult,
+  type GuidelineContext,
+  type TPMethodGuidance,
+} from "./oecd-reference-engine";
+
+// =============================================================================
+// CASE LAW ENGINE
+// =============================================================================
+
+export {
+  CaseLawEngine,
+  createCaseLawEngine,
+  TP_CASE_LAW_VERSION,
+  TP_CASE_LAW,
+  getCaseById,
+  getCasesByCourt,
+  getCasesByOutcome,
+  getCasesByMethod,
+  getCasesByNatureCode,
+  getCasesByKeyword,
+  getCaseLawLandmarkCases,
+  getCasesByAssessmentYear,
+  getCasesByBench,
+  getCaseStatistics,
+  type TPCaseLaw,
+  type CourtType,
+  type RulingOutcome,
+  type CaseLawTPMethod,
+  type CaseLawSearchQuery,
+  type CaseLawSearchResults,
+  type CaseLawSearchResult,
+  type CaseContext,
+  type IssueAnalysis,
+} from "./case-law-engine";
+
+// =============================================================================
+// FOREX ENGINE
+// =============================================================================
+
+export {
+  ForexEngine,
+  createForexEngine,
+  FOREX_ENGINE_VERSION,
+  STATIC_INR_RATES,
+  CURRENCY_INFO,
+  getSupportedCurrencies,
+  getCurrencyInfo,
+  isValidCurrencyCode,
+  formatCurrency,
+  type ForexRate,
+  type ForexConversionResult,
+  type HistoricalRate,
+  type HistoricalRateQuery,
+  type CurrencyCode,
+  type ConversionRequest,
+  type MultiConversionRequest,
+  type MultiConversionResult,
+  type RateComparisonResult,
+  type AveragePeriodResult,
+} from "./forex-engine";
+
+// =============================================================================
+// INTEREST RATE ENGINE
+// =============================================================================
+
+export {
+  InterestRateEngine,
+  createInterestRateEngine,
+  INTEREST_RATE_ENGINE_VERSION,
+  CURRENT_BENCHMARK_RATES,
+  RATE_INFO,
+  CREDIT_SPREADS,
+  getAllSupportedRateTypes,
+  getInterestRateInfo,
+  getInterestRatesByCurrency,
+  getInterestCreditSpread,
+  isInterestRateAvailable,
+  type InterestRate,
+  type InterestRateType,
+  type InterestRateCurrency,
+  type LoanPricingInput,
+  type LoanPricingResult,
+  type TPLoanBenchmarkInput,
+  type TPLoanBenchmarkResult,
+  type RateTrendAnalysis,
+  type SafeHarbourLoanResult,
+} from "./interest-rate-engine";
+
+// =============================================================================
+// COMPARABLE SEARCH ENGINE
+// =============================================================================
+
+export {
+  ComparableSearchEngine as ComparableEngine,
+  createComparableSearchEngine as createComparableEngine,
+  COMPARABLE_ENGINE_VERSION,
+  PLI_DESCRIPTIONS,
+  calculateBenchmarkingSet,
+  getFunctionalProfiles,
+  type ComparableCompany,
+  type CompanyFinancials,
+  type PLICalculated,
+  type ComparableSearchCriteria,
+  type BenchmarkingSet,
+  type FunctionalProfile as ComparableFunctionalProfile,
+  type DatabaseSource as ComparableDBSource,
+  type UnifiedSearchCriteria,
+  type UnifiedSearchResult,
+  type ComparabilityAnalysis,
+  type RejectionAnalysis,
+  type WorkingCapitalAdjustment,
+} from "./comparable-search-engine";
+
+// =============================================================================
+// E-FILING ENGINE
+// =============================================================================
+
+export {
+  EfilingEngine,
+  createEfilingEngine,
+  EFILING_ENGINE_VERSION,
+  getFormTypes,
+  getFormSchema,
+  getFormDeadline,
+  isFormOverdue,
+  getDaysUntilDeadline,
+  type FormType as EfilingFormType,
+  type SubmissionStatus,
+  type EfilingSubmission,
+  type SubmissionResponse,
+  type XMLValidationResult,
+  type SubmissionError,
+  type Form3CEBData,
+  type Form3CEAAData,
+  type Form3CEADData,
+  type InternationalTransactionEntry,
+  type JurisdictionEntry,
+  type CbCREntityEntry,
+  type SubmissionWorkflow,
+  type WorkflowStep,
+  type AuditLogEntry as EfilingAuditLogEntry,
+  type ComplianceStatus as EfilingComplianceStatus,
+} from "./efiling-engine";
+
+// =============================================================================
+// DSC SIGNING ENGINE
+// =============================================================================
+
+export {
+  DSCSigningEngine,
+  createDSCSigningEngine,
+  DSC_ENGINE_VERSION,
+  getSupportedProviders,
+  getSupportedSignatureTypes,
+  getDaysUntilExpiry,
+  isCertificateExpiringSoon,
+  type DSCProvider,
+  type DSCClass,
+  type SignatureType,
+  type CertificateInfo,
+  type SigningResponse,
+  type VerificationResponse,
+  type SigningError,
+  type SigningSession,
+  type DocumentSigningRequest,
+  type DocumentSigningResult,
+  type BatchSigningRequest,
+  type BatchSigningResult,
+  type SignatureAuditEntry,
+  type CertificateHealth,
+} from "./dsc-signing-engine";
+
+// =============================================================================
 // VERSION INFO
 // =============================================================================
 
 export const VERSION = {
-  core: "1.3.0",
+  core: "1.4.0",
   safeHarbourRules: "2024-25", // Valid through AY 2026-27
   form3CEBSchema: "1.4",
   aiService: "3.0.0",
+  oecdGuidelines: "2022",
+  caseLaw: "1.0.0",
+  forexEngine: "1.0.0",
+  interestRateEngine: "1.0.0",
+  comparableEngine: "1.0.0",
+  efilingEngine: "1.0.0",
+  dscEngine: "1.0.0",
   lastUpdated: "2025-01-29",
   features: {
     aiIntegration: true,
@@ -327,5 +523,8 @@ export const VERSION = {
     tier1AI: ["safe-harbour", "form-3ceb", "benchmarking"],
     tier2AI: ["master-file", "dashboard", "accounting-connector"],
     tier3AI: ["cbcr", "tp-dispute", "analytics"],
+    reference: ["oecd-guidelines", "case-law"],
+    rates: ["forex", "interest-rates"],
+    integrations: ["comparables", "efiling", "dsc-signing"],
   },
 };
