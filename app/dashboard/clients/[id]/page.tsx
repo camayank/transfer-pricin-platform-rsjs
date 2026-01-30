@@ -5,16 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Building2,
   ArrowLeft,
@@ -28,149 +19,32 @@ import {
   Globe,
   Plus,
   Download,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  MoreHorizontal,
   ChevronRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
-
-// Sample client data (would come from API in real app)
-const clientData = {
-  id: "1",
-  name: "TechCorp India Pvt Ltd",
-  pan: "AABCT1234A",
-  tan: "BLRT12345A",
-  cin: "U72200KA2015PTC123456",
-  industry: "IT Services",
-  nicCode: "6201",
-  nicDescription: "Computer programming activities",
-  contactPerson: "Rahul Sharma",
-  contactEmail: "rahul@techcorp.com",
-  contactPhone: "9876543210",
-  address: "123, Tech Park, Electronic City",
-  city: "Bangalore",
-  state: "Karnataka",
-  pincode: "560100",
-  country: "India",
-  website: "www.techcorp.com",
-  status: "in_progress",
-  assignedTo: "Priya Sharma",
-  createdAt: "2024-01-15",
-  financialYear: "2025-26",
-  parentCompany: "TechCorp Global Inc.",
-  parentCountry: "USA",
-  ultimateParent: "TechCorp Holdings LLC",
-  ultimateParentCountry: "USA",
-  consolidatedRevenue: 850_00_00_000,
-  totalRptValue: 82_00_00_000,
-};
-
-const engagements = [
-  {
-    id: "1",
-    year: "2025-26",
-    status: "in_progress",
-    dueDate: "2025-10-31",
-    form3cebStatus: "draft",
-    masterFileStatus: "not_started",
-    localFileStatus: "not_started",
-    assignedTo: "Priya S.",
-    progress: 35,
-  },
-  {
-    id: "2",
-    year: "2024-25",
-    status: "filed",
-    dueDate: "2024-10-31",
-    form3cebStatus: "filed",
-    masterFileStatus: "filed",
-    localFileStatus: "filed",
-    assignedTo: "Rahul M.",
-    progress: 100,
-  },
-];
-
-const transactions = [
-  {
-    id: "1",
-    natureCode: "01",
-    description: "Purchase of raw materials",
-    counterparty: "TechCorp US Inc",
-    country: "USA",
-    method: "TNMM",
-    amount: 25_00_00_000,
-    currency: "USD",
-    status: "documented",
-  },
-  {
-    id: "2",
-    natureCode: "03",
-    description: "IT enabled services (ITES)",
-    counterparty: "TechCorp Singapore Pte Ltd",
-    country: "Singapore",
-    method: "TNMM",
-    amount: 45_00_00_000,
-    currency: "INR",
-    status: "documented",
-  },
-  {
-    id: "3",
-    natureCode: "06",
-    description: "Payment for technical services",
-    counterparty: "TechCorp Japan KK",
-    country: "Japan",
-    method: "CUP",
-    amount: 12_00_00_000,
-    currency: "JPY",
-    status: "pending",
-  },
-];
-
-const documents = [
-  {
-    id: "1",
-    name: "Transfer Pricing Study 2024-25.pdf",
-    type: "TP Study",
-    uploadedAt: "2024-08-15",
-    size: "2.4 MB",
-    status: "approved",
-  },
-  {
-    id: "2",
-    name: "Form 3CEB Draft FY 2025-26.json",
-    type: "Form 3CEB",
-    uploadedAt: "2025-09-20",
-    size: "124 KB",
-    status: "draft",
-  },
-  {
-    id: "3",
-    name: "Intercompany Agreement - TechCorp US.pdf",
-    type: "Agreement",
-    uploadedAt: "2024-01-10",
-    size: "1.8 MB",
-    status: "approved",
-  },
-  {
-    id: "4",
-    name: "Benchmarking Analysis Q2 2025.xlsx",
-    type: "Benchmarking",
-    uploadedAt: "2025-07-30",
-    size: "856 KB",
-    status: "review",
-  },
-];
+import { useClient } from "@/lib/hooks/use-clients";
+import { useEngagements } from "@/lib/hooks/use-engagements";
+import { useDocuments } from "@/lib/hooks/use-documents";
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "warning" | "info" | "success" | "error" }> = {
-  not_started: { label: "Not Started", variant: "secondary" },
-  draft: { label: "Draft", variant: "warning" },
-  in_progress: { label: "In Progress", variant: "warning" },
-  review: { label: "Review", variant: "info" },
-  pending: { label: "Pending", variant: "warning" },
-  documented: { label: "Documented", variant: "success" },
-  approved: { label: "Approved", variant: "success" },
-  filed: { label: "Filed", variant: "success" },
+  // Client statuses
+  active: { label: "Active", variant: "success" },
+  inactive: { label: "Inactive", variant: "secondary" },
+  // Engagement statuses (enum values)
+  NOT_STARTED: { label: "Not Started", variant: "secondary" },
+  DATA_COLLECTION: { label: "Data Collection", variant: "warning" },
+  ANALYSIS: { label: "Analysis", variant: "warning" },
+  DOCUMENTATION: { label: "Documentation", variant: "info" },
+  REVIEW: { label: "Review", variant: "info" },
+  FILING: { label: "Filing", variant: "warning" },
+  COMPLETED: { label: "Completed", variant: "success" },
+  // Document statuses (enum values)
+  DRAFT: { label: "Draft", variant: "warning" },
+  PENDING_REVIEW: { label: "Pending Review", variant: "warning" },
+  APPROVED: { label: "Approved", variant: "success" },
+  FILED: { label: "Filed", variant: "success" },
+  REJECTED: { label: "Rejected", variant: "error" },
 };
 
 function formatCurrency(amount: number): string {
@@ -185,14 +59,48 @@ function formatCurrency(amount: number): string {
 
 export default function ClientDetailPage() {
   const params = useParams();
+  const clientId = params.id as string;
+
   const [activeTab, setActiveTab] = useState<"overview" | "engagements" | "transactions" | "documents">("overview");
+
+  // Fetch real data from API
+  const { data: clientResponse, isLoading: clientLoading, error: clientError } = useClient(clientId);
+  const { data: engagementsResponse } = useEngagements({ clientId });
+  const { data: documentsResponse } = useDocuments({ clientId });
+
+  const clientData = clientResponse?.client;
+  // Use data from separate hooks (client API includes them but type doesn't expose them)
+  const engagements = engagementsResponse?.engagements || [];
+  const documents = documentsResponse?.documents || [];
 
   const tabs = [
     { id: "overview", label: "Overview" },
-    { id: "engagements", label: "Engagements" },
+    { id: "engagements", label: `Engagements (${engagements.length})` },
     { id: "transactions", label: "Transactions" },
-    { id: "documents", label: "Documents" },
+    { id: "documents", label: `Documents (${documents.length})` },
   ];
+
+  // Loading state
+  if (clientLoading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (clientError || !clientData) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center gap-4">
+        <AlertCircle className="h-12 w-12 text-[var(--error)]" />
+        <p className="text-lg text-[var(--text-primary)]">Client not found</p>
+        <Link href="/dashboard/clients">
+          <Button variant="outline">Back to Clients</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -222,29 +130,41 @@ export default function ClientDetailPage() {
                 <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
                   {clientData.name}
                 </h1>
-                <Badge variant={statusConfig[clientData.status].variant}>
-                  {statusConfig[clientData.status].label}
+                <Badge variant={statusConfig[clientData.status || "active"]?.variant || "secondary"}>
+                  {statusConfig[clientData.status || "active"]?.label || "Active"}
                 </Badge>
               </div>
               <div className="mt-1 flex items-center gap-4 text-sm text-[var(--text-muted)]">
                 <span>PAN: {clientData.pan}</span>
-                <span className="text-[var(--border-default)]">|</span>
-                <span>{clientData.industry}</span>
-                <span className="text-[var(--border-default)]">|</span>
-                <span>NIC: {clientData.nicCode}</span>
+                {clientData.industry && (
+                  <>
+                    <span className="text-[var(--border-default)]">|</span>
+                    <span>{clientData.industry}</span>
+                  </>
+                )}
+                {clientData.nicCode && (
+                  <>
+                    <span className="text-[var(--border-default)]">|</span>
+                    <span>NIC: {clientData.nicCode}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Edit className="mr-1 h-4 w-4" />
-            Edit
-          </Button>
-          <Button>
-            <Plus className="mr-1 h-4 w-4" />
-            New Engagement
-          </Button>
+          <Link href={`/dashboard/clients/${clientId}/edit`}>
+            <Button variant="outline">
+              <Edit className="mr-1 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+          <Link href={`/dashboard/engagements/new?clientId=${clientId}`}>
+            <Button>
+              <Plus className="mr-1 h-4 w-4" />
+              New Engagement
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -274,9 +194,9 @@ export default function ClientDetailPage() {
             <div className="grid gap-4 md:grid-cols-3">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-[var(--text-muted)]">Total RPT Value</p>
+                  <p className="text-sm text-[var(--text-muted)]">Total Engagements</p>
                   <p className="mt-1 text-2xl font-semibold text-[var(--accent)]">
-                    {formatCurrency(clientData.totalRptValue)}
+                    {engagements.length}
                   </p>
                 </CardContent>
               </Card>
@@ -284,15 +204,15 @@ export default function ClientDetailPage() {
                 <CardContent className="p-4">
                   <p className="text-sm text-[var(--text-muted)]">Active Engagements</p>
                   <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
-                    {engagements.filter((e) => e.status !== "filed").length}
+                    {engagements.filter((e) => e.status !== "COMPLETED").length}
                   </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-[var(--text-muted)]">Transactions</p>
+                  <p className="text-sm text-[var(--text-muted)]">Documents</p>
                   <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
-                    {transactions.length}
+                    {documents.length}
                   </p>
                 </CardContent>
               </Card>
@@ -305,110 +225,137 @@ export default function ClientDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                      <Users className="h-4 w-4" />
+                  {clientData.contactPerson && (
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-[var(--text-muted)]">Contact Person</p>
+                        <p className="font-medium text-[var(--text-primary)]">
+                          {clientData.contactPerson}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Contact Person</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {clientData.contactPerson}
-                      </p>
+                  )}
+                  {clientData.contactEmail && (
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                        <Mail className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-[var(--text-muted)]">Email</p>
+                        <p className="font-medium text-[var(--text-primary)]">
+                          {clientData.contactEmail}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                      <Mail className="h-4 w-4" />
+                  )}
+                  {clientData.contactPhone && (
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                        <Phone className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-[var(--text-muted)]">Phone</p>
+                        <p className="font-medium text-[var(--text-primary)]">
+                          {clientData.contactPhone}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Email</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {clientData.contactEmail}
-                      </p>
+                  )}
+                  {clientData.website && (
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                        <Globe className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-[var(--text-muted)]">Website</p>
+                        <p className="font-medium text-[var(--text-primary)]">
+                          {clientData.website}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                      <Phone className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Phone</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        +91 {clientData.contactPhone}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                      <Globe className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Website</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {clientData.website}
-                      </p>
-                    </div>
-                  </div>
+                  )}
+                  {!clientData.contactPerson && !clientData.contactEmail && !clientData.contactPhone && !clientData.website && (
+                    <p className="col-span-2 text-sm text-[var(--text-muted)]">No contact information available</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Registered Address</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                    <MapPin className="h-4 w-4" />
+            {(clientData.address || clientData.city || clientData.state) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Registered Address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                      <MapPin className="h-4 w-4" />
+                    </div>
+                    <div>
+                      {clientData.address && (
+                        <p className="text-[var(--text-primary)]">{clientData.address}</p>
+                      )}
+                      {(clientData.city || clientData.state || clientData.pincode) && (
+                        <p className="text-[var(--text-secondary)]">
+                          {[clientData.city, clientData.state, clientData.pincode].filter(Boolean).join(", ")}
+                        </p>
+                      )}
+                      <p className="text-[var(--text-muted)]">{clientData.country || "India"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[var(--text-primary)]">{clientData.address}</p>
-                    <p className="text-[var(--text-secondary)]">
-                      {clientData.city}, {clientData.state} - {clientData.pincode}
-                    </p>
-                    <p className="text-[var(--text-muted)]">{clientData.country}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Group Structure */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Group Structure</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg bg-[var(--bg-secondary)] p-4">
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Ultimate Parent Company</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {clientData.ultimateParent}
-                      </p>
+            {(clientData.ultimateParent || clientData.parentCompany) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Group Structure</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {clientData.ultimateParent && (
+                      <div className="flex items-center justify-between rounded-lg bg-[var(--bg-secondary)] p-4">
+                        <div>
+                          <p className="text-sm text-[var(--text-muted)]">Ultimate Parent Company</p>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            {clientData.ultimateParent}
+                          </p>
+                        </div>
+                        {clientData.ultimateParentCountry && (
+                          <Badge variant="secondary">{clientData.ultimateParentCountry}</Badge>
+                        )}
+                      </div>
+                    )}
+                    {clientData.parentCompany && (
+                      <div className="flex items-center justify-between rounded-lg bg-[var(--bg-secondary)] p-4">
+                        <div>
+                          <p className="text-sm text-[var(--text-muted)]">Immediate Parent Company</p>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            {clientData.parentCompany}
+                          </p>
+                        </div>
+                        {clientData.parentCountry && (
+                          <Badge variant="secondary">{clientData.parentCountry}</Badge>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-glow)] p-4">
+                      <div>
+                        <p className="text-sm text-[var(--text-muted)]">Indian Entity (Assessee)</p>
+                        <p className="font-medium text-[var(--accent)]">{clientData.name}</p>
+                      </div>
+                      <Badge variant="info">India</Badge>
                     </div>
-                    <Badge variant="secondary">{clientData.ultimateParentCountry}</Badge>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg bg-[var(--bg-secondary)] p-4">
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Immediate Parent Company</p>
-                      <p className="font-medium text-[var(--text-primary)]">
-                        {clientData.parentCompany}
-                      </p>
-                    </div>
-                    <Badge variant="secondary">{clientData.parentCountry}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-glow)] p-4">
-                    <div>
-                      <p className="text-sm text-[var(--text-muted)]">Indian Entity (Assessee)</p>
-                      <p className="font-medium text-[var(--accent)]">{clientData.name}</p>
-                    </div>
-                    <Badge variant="info">India</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -425,30 +372,38 @@ export default function ClientDetailPage() {
                     {clientData.pan}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">TAN</p>
-                  <p className="font-mono font-medium text-[var(--text-primary)]">
-                    {clientData.tan}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">CIN</p>
-                  <p className="font-mono text-sm font-medium text-[var(--text-primary)]">
-                    {clientData.cin}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">NIC Code</p>
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {clientData.nicCode} - {clientData.nicDescription}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">Consolidated Revenue</p>
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {formatCurrency(clientData.consolidatedRevenue)}
-                  </p>
-                </div>
+                {clientData.tan && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">TAN</p>
+                    <p className="font-mono font-medium text-[var(--text-primary)]">
+                      {clientData.tan}
+                    </p>
+                  </div>
+                )}
+                {clientData.cin && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">CIN</p>
+                    <p className="font-mono text-sm font-medium text-[var(--text-primary)]">
+                      {clientData.cin}
+                    </p>
+                  </div>
+                )}
+                {clientData.nicCode && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">NIC Code</p>
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {clientData.nicCode}{clientData.nicDescription ? ` - ${clientData.nicDescription}` : ""}
+                    </p>
+                  </div>
+                )}
+                {clientData.consolidatedRevenue && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">Consolidated Revenue</p>
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {formatCurrency(Number(clientData.consolidatedRevenue))}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -458,23 +413,27 @@ export default function ClientDetailPage() {
                 <CardTitle className="text-base">Assignment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">Assigned To</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-glow)] text-sm font-medium text-[var(--accent)]">
-                      {clientData.assignedTo.split(" ").map((n) => n[0]).join("")}
+                {clientData.assignedTo && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">Assigned To</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-glow)] text-sm font-medium text-[var(--accent)]">
+                        {(clientData.assignedTo.name || "U").split(" ").map((n: string) => n[0]).join("")}
+                      </div>
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {clientData.assignedTo.name || "Unassigned"}
+                      </span>
                     </div>
-                    <span className="font-medium text-[var(--text-primary)]">
-                      {clientData.assignedTo}
-                    </span>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">Financial Year</p>
-                  <p className="font-medium text-[var(--text-primary)]">
-                    {clientData.financialYear}
-                  </p>
-                </div>
+                )}
+                {engagements.length > 0 && (
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">Latest Financial Year</p>
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {engagements[0]?.financialYear || "N/A"}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-[var(--text-muted)]">Client Since</p>
                   <p className="font-medium text-[var(--text-primary)]">
@@ -518,84 +477,77 @@ export default function ClientDetailPage() {
             <h2 className="text-lg font-medium text-[var(--text-primary)]">
               Engagement History
             </h2>
-            <Button>
-              <Plus className="mr-1 h-4 w-4" />
-              New Engagement
-            </Button>
+            <Link href={`/dashboard/engagements/new?clientId=${clientId}`}>
+              <Button>
+                <Plus className="mr-1 h-4 w-4" />
+                New Engagement
+              </Button>
+            </Link>
           </div>
-          {engagements.map((engagement) => (
-            <Card key={engagement.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--bg-secondary)] text-[var(--text-muted)]">
-                      <Calendar className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-[var(--text-primary)]">
-                          FY {engagement.year}
-                        </h3>
-                        <Badge variant={statusConfig[engagement.status].variant}>
-                          {statusConfig[engagement.status].label}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-[var(--text-muted)]">
-                        Due: {new Date(engagement.dueDate).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <Badge variant={statusConfig[engagement.form3cebStatus].variant} className="text-xs">
-                          {statusConfig[engagement.form3cebStatus].label}
-                        </Badge>
-                        <p className="mt-1 text-xs text-[var(--text-muted)]">Form 3CEB</p>
-                      </div>
-                      <div>
-                        <Badge variant={statusConfig[engagement.masterFileStatus].variant} className="text-xs">
-                          {statusConfig[engagement.masterFileStatus].label}
-                        </Badge>
-                        <p className="mt-1 text-xs text-[var(--text-muted)]">Master File</p>
-                      </div>
-                      <div>
-                        <Badge variant={statusConfig[engagement.localFileStatus].variant} className="text-xs">
-                          {statusConfig[engagement.localFileStatus].label}
-                        </Badge>
-                        <p className="mt-1 text-xs text-[var(--text-muted)]">Local File</p>
-                      </div>
-                    </div>
-                    <div className="w-24">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[var(--text-muted)]">Progress</span>
-                        <span className="font-medium text-[var(--text-primary)]">
-                          {engagement.progress}%
-                        </span>
-                      </div>
-                      <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--bg-secondary)]">
-                        <div
-                          className={`h-full ${
-                            engagement.progress === 100
-                              ? "bg-[var(--success)]"
-                              : "bg-[var(--accent)]"
-                          }`}
-                          style={{ width: `${engagement.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </div>
-                </div>
+          {engagements.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Calendar className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+                <p className="mt-4 text-[var(--text-muted)]">No engagements yet</p>
+                <Link href={`/dashboard/engagements/new?clientId=${clientId}`}>
+                  <Button className="mt-4">
+                    <Plus className="mr-1 h-4 w-4" />
+                    Create First Engagement
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            engagements.map((engagement) => (
+              <Card key={engagement.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--bg-secondary)] text-[var(--text-muted)]">
+                        <Calendar className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-[var(--text-primary)]">
+                            FY {engagement.financialYear}
+                          </h3>
+                          <Badge variant={statusConfig[engagement.status]?.variant || "secondary"}>
+                            {statusConfig[engagement.status]?.label || engagement.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          Assessment Year: {engagement.assessmentYear}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm text-[var(--text-muted)]">Priority</p>
+                        <Badge variant={engagement.priority === "HIGH" ? "error" : engagement.priority === "MEDIUM" ? "warning" : "secondary"}>
+                          {engagement.priority}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-[var(--text-muted)]">Created</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {new Date(engagement.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <Link href={`/dashboard/engagements/${engagement.id}`}>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       )}
 
@@ -605,83 +557,44 @@ export default function ClientDetailPage() {
             <h2 className="text-lg font-medium text-[var(--text-primary)]">
               International Transactions
             </h2>
-            <Button>
-              <Plus className="mr-1 h-4 w-4" />
-              Add Transaction
-            </Button>
           </div>
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[var(--border-subtle)]">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--text-muted)]">
-                        Nature
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--text-muted)]">
-                        Description
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--text-muted)]">
-                        Counterparty
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--text-muted)]">
-                        Method
-                      </th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-[var(--text-muted)]">
-                        Amount
-                      </th>
-                      <th className="px-4 py-3 text-center text-sm font-medium text-[var(--text-muted)]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-[var(--text-muted)]">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((txn) => (
-                      <tr
-                        key={txn.id}
-                        className="border-b border-[var(--border-subtle)] last:border-0"
-                      >
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary">{txn.natureCode}</Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-[var(--text-primary)]">
-                            {txn.description}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="text-[var(--text-primary)]">{txn.counterparty}</p>
-                          <p className="text-sm text-[var(--text-muted)]">{txn.country}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="info">{txn.method}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <p className="font-medium text-[var(--text-primary)]">
-                            {formatCurrency(txn.amount)}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge variant={statusConfig[txn.status].variant}>
-                            {statusConfig[txn.status].label}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          {engagements.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+                <p className="mt-4 text-[var(--text-muted)]">
+                  Create an engagement first to add transactions
+                </p>
+                <Link href={`/dashboard/engagements/new?clientId=${clientId}`}>
+                  <Button className="mt-4">
+                    <Plus className="mr-1 h-4 w-4" />
+                    Create Engagement
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+                <p className="mt-4 text-[var(--text-primary)]">
+                  Transactions are managed per engagement
+                </p>
+                <p className="mt-2 text-sm text-[var(--text-muted)]">
+                  Select an engagement to view and manage its transactions
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  {engagements.slice(0, 5).map((engagement) => (
+                    <Link key={engagement.id} href={`/dashboard/engagements/${engagement.id}`}>
+                      <Button variant="outline" size="sm">
+                        FY {engagement.financialYear}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -694,39 +607,58 @@ export default function ClientDetailPage() {
               Upload Document
             </Button>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {documents.map((doc) => (
-              <Card key={doc.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-[var(--text-primary)]">{doc.name}</p>
-                        <div className="mt-1 flex items-center gap-2 text-sm text-[var(--text-muted)]">
-                          <span>{doc.type}</span>
-                          <span className="text-[var(--border-default)]">|</span>
-                          <span>{doc.size}</span>
-                          <span className="text-[var(--border-default)]">|</span>
-                          <span>{new Date(doc.uploadedAt).toLocaleDateString("en-IN")}</span>
+          {documents.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+                <p className="mt-4 text-[var(--text-muted)]">No documents uploaded yet</p>
+                <Button className="mt-4">
+                  <Plus className="mr-1 h-4 w-4" />
+                  Upload First Document
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {documents.map((doc) => (
+                <Card key={doc.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)]">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[var(--text-primary)]">
+                            {doc.name || doc.fileName || "Untitled Document"}
+                          </p>
+                          <div className="mt-1 flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                            <span>{doc.type}</span>
+                            {doc.fileSize && (
+                              <>
+                                <span className="text-[var(--border-default)]">|</span>
+                                <span>{(doc.fileSize / 1024).toFixed(1)} KB</span>
+                              </>
+                            )}
+                            <span className="text-[var(--border-default)]">|</span>
+                            <span>{new Date(doc.uploadedAt).toLocaleDateString("en-IN")}</span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={statusConfig[doc.status]?.variant || "secondary"}>
+                          {statusConfig[doc.status]?.label || doc.status}
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={statusConfig[doc.status].variant}>
-                        {statusConfig[doc.status].label}
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

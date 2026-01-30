@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 /**
  * POST /api/auth/register
- * Register a new user and optionally create a new firm
+ * Register a new user and create a new firm
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name, firmName } = body;
+    const { name, email, password, firmName } = body;
 
     // Validate required fields
-    if (!email || !password || !name) {
+    if (!name || !email || !password || !firmName) {
       return NextResponse.json(
-        { error: "Missing required fields: email, password, name" },
+        { error: "All fields are required" },
         { status: 400 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
+    // Validate password length
     if (password.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters" },
@@ -43,67 +43,62 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "User with this email already exists" },
+        { error: "An account with this email already exists" },
         { status: 409 }
       );
     }
 
     // Hash password
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user with or without firm
-    let user;
-
-    if (firmName) {
-      // Create new firm and user as ADMIN of that firm
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          password: hashedPassword,
-          name,
-          role: "ADMIN", // First user of a firm is ADMIN
-          status: "ACTIVE",
-          firm: {
-            create: {
-              name: firmName,
-              plan: "STARTER",
-              maxClients: 10,
-            },
-          },
-        },
-        include: {
-          firm: true,
-        },
-      });
-    } else {
-      // Create user without firm (will need to be added to a firm later)
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          password: hashedPassword,
-          name,
-          role: "ASSOCIATE", // Default role for users without firm
-          status: "PENDING", // Pending until added to a firm
-        },
-      });
-    }
-
-    // Return success without password
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        firmId: user.firmId,
-        firmName: "firm" in user && user.firm ? user.firm.name : null,
+    // Create firm first (defaults to STARTER plan)
+    const firm = await prisma.firm.create({
+      data: {
+        name: firmName,
+        plan: "STARTER",
       },
     });
+
+    // Create user with ADMIN role (first user of a firm)
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: "ADMIN",
+        firmId: firm.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        firm: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(
+      {
+        message: "Account created successfully",
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          firmName: user.firm?.name,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { error: "Failed to register user" },
+      { error: "Failed to create account. Please try again." },
       { status: 500 }
     );
   }
