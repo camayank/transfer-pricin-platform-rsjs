@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,11 @@ import {
   Download,
   ArrowRight,
   ArrowLeft,
+  Upload,
+  X,
+  File,
+  StickyNote,
+  Save,
 } from "lucide-react";
 
 // Master File sections as per Rule 10DA
@@ -94,6 +99,17 @@ interface SectionStatus {
   totalFields: number;
 }
 
+interface FieldData {
+  text: string;
+  notes: string[];
+  documents: { name: string; size: string; type: string }[];
+}
+
+type FieldDataMap = Record<string, FieldData>;
+
+// Helper to create field key
+const getFieldKey = (sectionId: number, fieldIdx: number) => `${sectionId}-${fieldIdx}`;
+
 export default function MasterFilePage() {
   const [currentSection, setCurrentSection] = useState(1);
   const [sectionStatus, setSectionStatus] = useState<Record<number, SectionStatus>>(
@@ -106,6 +122,139 @@ export default function MasterFilePage() {
       },
     }), {})
   );
+
+  // Field data state
+  const [fieldData, setFieldData] = useState<FieldDataMap>({});
+  const [activeNoteField, setActiveNoteField] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Get field data helper
+  const getFieldData = (sectionId: number, fieldIdx: number): FieldData => {
+    const key = getFieldKey(sectionId, fieldIdx);
+    return fieldData[key] || { text: "", notes: [], documents: [] };
+  };
+
+  // Update field text
+  const handleTextChange = (sectionId: number, fieldIdx: number, value: string) => {
+    const key = getFieldKey(sectionId, fieldIdx);
+    setFieldData((prev) => ({
+      ...prev,
+      [key]: {
+        ...getFieldData(sectionId, fieldIdx),
+        text: value,
+      },
+    }));
+    updateSectionProgress(sectionId);
+  };
+
+  // Handle file upload
+  const handleFileUpload = (sectionId: number, fieldIdx: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const key = getFieldKey(sectionId, fieldIdx);
+    const currentData = getFieldData(sectionId, fieldIdx);
+
+    const newDocs = Array.from(files).map((file) => ({
+      name: file.name,
+      size: formatFileSize(file.size),
+      type: file.type || "application/octet-stream",
+    }));
+
+    setFieldData((prev) => ({
+      ...prev,
+      [key]: {
+        ...currentData,
+        documents: [...currentData.documents, ...newDocs],
+      },
+    }));
+    updateSectionProgress(sectionId);
+  };
+
+  // Remove document
+  const handleRemoveDocument = (sectionId: number, fieldIdx: number, docIdx: number) => {
+    const key = getFieldKey(sectionId, fieldIdx);
+    const currentData = getFieldData(sectionId, fieldIdx);
+
+    setFieldData((prev) => ({
+      ...prev,
+      [key]: {
+        ...currentData,
+        documents: currentData.documents.filter((_, i) => i !== docIdx),
+      },
+    }));
+    updateSectionProgress(sectionId);
+  };
+
+  // Add note
+  const handleAddNote = (sectionId: number, fieldIdx: number) => {
+    if (!noteText.trim()) return;
+
+    const key = getFieldKey(sectionId, fieldIdx);
+    const currentData = getFieldData(sectionId, fieldIdx);
+
+    setFieldData((prev) => ({
+      ...prev,
+      [key]: {
+        ...currentData,
+        notes: [...currentData.notes, noteText.trim()],
+      },
+    }));
+    setNoteText("");
+    setActiveNoteField(null);
+    updateSectionProgress(sectionId);
+  };
+
+  // Remove note
+  const handleRemoveNote = (sectionId: number, fieldIdx: number, noteIdx: number) => {
+    const key = getFieldKey(sectionId, fieldIdx);
+    const currentData = getFieldData(sectionId, fieldIdx);
+
+    setFieldData((prev) => ({
+      ...prev,
+      [key]: {
+        ...currentData,
+        notes: currentData.notes.filter((_, i) => i !== noteIdx),
+      },
+    }));
+    updateSectionProgress(sectionId);
+  };
+
+  // Update section progress based on filled fields
+  const updateSectionProgress = (sectionId: number) => {
+    const section = MASTER_FILE_SECTIONS.find((s) => s.id === sectionId);
+    if (!section) return;
+
+    let completed = 0;
+    section.fields.forEach((_, idx) => {
+      const data = getFieldData(sectionId, idx);
+      if (data.text.trim() || data.notes.length > 0 || data.documents.length > 0) {
+        completed++;
+      }
+    });
+
+    setSectionStatus((prev) => ({
+      ...prev,
+      [sectionId]: {
+        ...prev[sectionId],
+        fieldsCompleted: completed,
+        completed: completed === section.fields.length,
+      },
+    }));
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  // Trigger file input click
+  const triggerFileUpload = (sectionId: number, fieldIdx: number) => {
+    const key = getFieldKey(sectionId, fieldIdx);
+    fileInputRefs.current[key]?.click();
+  };
 
   const totalFieldsCompleted = Object.values(sectionStatus).reduce(
     (sum, s) => sum + s.fieldsCompleted,
@@ -245,33 +394,157 @@ export default function MasterFilePage() {
                     Required Information
                   </h4>
                   <div className="space-y-4">
-                    {currentSectionData.fields.map((field, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--bg-card)] text-xs font-medium text-[var(--text-muted)]">
-                            {idx + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-[var(--text-primary)]">{field}</p>
-                            <div className="mt-3">
-                              <Input placeholder="Enter information or attach document..." />
+                    {currentSectionData.fields.map((field, idx) => {
+                      const data = getFieldData(currentSectionData.id, idx);
+                      const fieldKey = getFieldKey(currentSectionData.id, idx);
+                      const isNoteActive = activeNoteField === fieldKey;
+                      const hasContent = data.text.trim() || data.notes.length > 0 || data.documents.length > 0;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`rounded-lg border p-4 ${
+                            hasContent
+                              ? "border-[var(--success)]/30 bg-[var(--success-bg)]"
+                              : "border-[var(--border-subtle)] bg-[var(--bg-secondary)]"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                              hasContent
+                                ? "bg-[var(--success)] text-white"
+                                : "bg-[var(--bg-card)] text-[var(--text-muted)]"
+                            }`}>
+                              {hasContent ? <CheckCircle className="h-4 w-4" /> : idx + 1}
                             </div>
-                            <div className="mt-2 flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Plus className="mr-1 h-3 w-3" />
-                                Upload Document
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                Add Note
-                              </Button>
+                            <div className="flex-1">
+                              <p className="font-medium text-[var(--text-primary)]">{field}</p>
+
+                              {/* Text Input */}
+                              <div className="mt-3">
+                                <Input
+                                  placeholder="Enter information or attach document..."
+                                  value={data.text}
+                                  onChange={(e) => handleTextChange(currentSectionData.id, idx, e.target.value)}
+                                />
+                              </div>
+
+                              {/* Uploaded Documents */}
+                              {data.documents.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  <p className="text-xs font-medium text-[var(--text-muted)]">Uploaded Documents:</p>
+                                  {data.documents.map((doc, docIdx) => (
+                                    <div
+                                      key={docIdx}
+                                      className="flex items-center gap-2 rounded-md bg-[var(--bg-card)] px-3 py-2"
+                                    >
+                                      <File className="h-4 w-4 text-[var(--accent)]" />
+                                      <span className="flex-1 text-sm text-[var(--text-primary)] truncate">{doc.name}</span>
+                                      <span className="text-xs text-[var(--text-muted)]">{doc.size}</span>
+                                      <button
+                                        onClick={() => handleRemoveDocument(currentSectionData.id, idx, docIdx)}
+                                        className="p-1 hover:bg-[var(--error-bg)] rounded text-[var(--text-muted)] hover:text-[var(--error)]"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Notes */}
+                              {data.notes.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  <p className="text-xs font-medium text-[var(--text-muted)]">Notes:</p>
+                                  {data.notes.map((note, noteIdx) => (
+                                    <div
+                                      key={noteIdx}
+                                      className="flex items-start gap-2 rounded-md bg-[var(--warning-bg)] px-3 py-2"
+                                    >
+                                      <StickyNote className="h-4 w-4 mt-0.5 text-[var(--warning)]" />
+                                      <span className="flex-1 text-sm text-[var(--text-primary)]">{note}</span>
+                                      <button
+                                        onClick={() => handleRemoveNote(currentSectionData.id, idx, noteIdx)}
+                                        className="p-1 hover:bg-[var(--error-bg)] rounded text-[var(--text-muted)] hover:text-[var(--error)]"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Add Note Form */}
+                              {isNoteActive && (
+                                <div className="mt-3 space-y-2">
+                                  <textarea
+                                    className="w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                                    placeholder="Enter your note..."
+                                    rows={3}
+                                    value={noteText}
+                                    onChange={(e) => setNoteText(e.target.value)}
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleAddNote(currentSectionData.id, idx)}
+                                      disabled={!noteText.trim()}
+                                    >
+                                      <Save className="mr-1 h-3 w-3" />
+                                      Save Note
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setActiveNoteField(null);
+                                        setNoteText("");
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="mt-2 flex gap-2">
+                                <input
+                                  type="file"
+                                  multiple
+                                  className="hidden"
+                                  ref={(el) => { fileInputRefs.current[fieldKey] = el; }}
+                                  onChange={(e) => handleFileUpload(currentSectionData.id, idx, e.target.files)}
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => triggerFileUpload(currentSectionData.id, idx)}
+                                >
+                                  <Upload className="mr-1 h-3 w-3" />
+                                  Upload Document
+                                </Button>
+                                {!isNoteActive && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setActiveNoteField(fieldKey);
+                                      setNoteText("");
+                                    }}
+                                  >
+                                    <StickyNote className="mr-1 h-3 w-3" />
+                                    Add Note
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
