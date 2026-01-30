@@ -87,7 +87,7 @@ export default function LandingPage() {
             >
               Login
             </Link>
-            <Link href="/">
+            <Link href="/register">
               <Button size="sm">Start Free Trial</Button>
             </Link>
           </div>
@@ -116,7 +116,7 @@ export default function LandingPage() {
               — all in one place.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Link href="/">
+              <Link href="/register">
                 <Button size="lg" className="w-full sm:w-auto">
                   Start 14-Day Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -321,7 +321,7 @@ export default function LandingPage() {
             Join 100+ CA firms already using DigiComply for Transfer Pricing
             compliance. Start your free trial today.
           </p>
-          <Link href="/">
+          <Link href="/register">
             <Button size="lg">
               Start Free Trial
               <ArrowRight className="ml-2 h-4 w-4" />
