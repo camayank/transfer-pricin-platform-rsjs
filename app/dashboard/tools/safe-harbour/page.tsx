@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip } from "@/components/ui/tooltip";
+import { HelpPanel, InlineHelp, type HelpContent } from "@/components/ui/help-panel";
+import { GlossaryTermLink } from "@/components/ui/glossary";
 import {
   SAFE_HARBOUR_RULES,
   SBI_RATES,
@@ -27,7 +30,46 @@ import {
   AlertTriangle,
   Info,
   ArrowRight,
+  HelpCircle,
+  BookOpen,
 } from "lucide-react";
+
+// Help content for the Safe Harbour Calculator
+const SAFE_HARBOUR_HELP: HelpContent = {
+  title: "Safe Harbour Calculator Guide",
+  description: "Safe Harbour provisions under Rule 10TD/10TE/10TF allow taxpayers to avoid detailed transfer pricing scrutiny by meeting prescribed margins.",
+  steps: [
+    {
+      title: "Select Transaction Type",
+      description: "Choose the type of international transaction - IT/ITeS, KPO, R&D, loans, or guarantees."
+    },
+    {
+      title: "Enter Transaction Details",
+      description: "Provide the transaction value and financial data (operating profit, cost, etc.) as applicable."
+    },
+    {
+      title: "Review Eligibility",
+      description: "The calculator checks if your margin meets the safe harbour threshold for your transaction type."
+    },
+    {
+      title: "Take Action",
+      description: "If eligible, file Form 3CEFA. If not, consider the recommendations or proceed with full benchmarking."
+    }
+  ],
+  tips: [
+    "Safe Harbour significantly reduces audit risk - the TPO cannot make adjustments if conditions are met.",
+    "For IT/ITeS, the required margin depends on transaction value - higher value means higher margin requirement.",
+    "KPO margin thresholds depend on employee cost percentage - higher employee costs allow lower margins.",
+    "For loans, the interest rate must be within SBI base rate plus prescribed spread based on credit rating.",
+    "File Form 3CEFA along with Form 3CEB to opt for Safe Harbour in a particular assessment year."
+  ],
+  glossaryTerms: ["Safe Harbour", "Rule 10TD", "OP/OC", "Form 3CEFA", "Associated Enterprise"],
+  links: [
+    { text: "Benchmarking Analysis", href: "/dashboard/tools/benchmarking" },
+    { text: "Form 3CEB Generator", href: "/dashboard/tools/form-3ceb" },
+    { text: "Reference Library", href: "/dashboard/reference" }
+  ]
+};
 
 const transactionTypeCards = [
   {
@@ -96,6 +138,7 @@ export default function SafeHarbourPage() {
   const [employeeCost, setEmployeeCost] = useState<string>("");
   const [creditRating, setCreditRating] = useState<string>("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const rule = selectedType ? SAFE_HARBOUR_RULES[selectedType] : null;
 
@@ -177,21 +220,78 @@ export default function SafeHarbourPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
-          Safe Harbour Calculator
-        </h1>
-        <p className="text-[var(--text-secondary)]">
-          Check eligibility under Rule 10TD/10TE/10TF of Income Tax Rules
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
+            Safe Harbour Calculator
+          </h1>
+          <p className="text-[var(--text-secondary)]">
+            Check eligibility under <GlossaryTermLink term="Rule 10TD">Rule 10TD/10TE/10TF</GlossaryTermLink> of Income Tax Rules
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowHelp(true)}
+          className="flex items-center gap-2"
+        >
+          <HelpCircle className="h-4 w-4" />
+          Help Guide
+        </Button>
       </div>
+
+      {/* Inline Help Section */}
+      <InlineHelp title="What is Safe Harbour and how does this calculator help?">
+        <div className="space-y-3 text-sm text-[var(--text-secondary)]">
+          <p>
+            <GlossaryTermLink term="Safe Harbour">Safe Harbour</GlossaryTermLink> is a simplified
+            transfer pricing regime where the tax authority accepts your declared transfer price
+            without detailed scrutiny, provided you meet certain conditions and margins.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="font-medium text-[var(--text-primary)] mb-1">Benefits of Safe Harbour:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>No transfer pricing adjustment by TPO</li>
+                <li>Reduced compliance burden</li>
+                <li>Legal certainty for 5 years</li>
+                <li>No penalty or interest on covered transactions</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium text-[var(--text-primary)] mb-1">This calculator helps you:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Check if your transaction qualifies</li>
+                <li>Calculate your <GlossaryTermLink term="OP/OC">OP/OC margin</GlossaryTermLink></li>
+                <li>Identify the gap if not eligible</li>
+                <li>Get recommendations for compliance</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </InlineHelp>
+
+      {/* Help Panel */}
+      <HelpPanel
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        content={SAFE_HARBOUR_HELP}
+      />
 
       {/* Transaction Type Selection */}
       {!selectedType && (
         <div>
-          <h2 className="mb-4 text-lg font-medium text-[var(--text-primary)]">
-            Select Transaction Type
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-medium text-[var(--text-primary)]">
+              Select Transaction Type
+            </h2>
+            <Tooltip content="Safe Harbour is available for specific types of international transactions with associated enterprises. Select the transaction type that matches your situation.">
+              <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+            </Tooltip>
+          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-4">
+            Choose the type of <GlossaryTermLink term="International Transaction">international transaction</GlossaryTermLink> with your <GlossaryTermLink term="AE">Associated Enterprise (AE)</GlossaryTermLink>
+          </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {transactionTypeCards.map((card) => (
               <button
@@ -231,7 +331,12 @@ export default function SafeHarbourPage() {
               <CardContent className="space-y-6">
                 {/* Transaction Value */}
                 <div className="space-y-2">
-                  <Label>Transaction Value (in Crores)</Label>
+                  <div className="flex items-center gap-2">
+                    <Label>Transaction Value (in Crores)</Label>
+                    <Tooltip content="Total value of international transactions with associated enterprises during the financial year. For IT/ITeS and KPO, this determines which margin threshold applies.">
+                      <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                    </Tooltip>
+                  </div>
                   <Input
                     type="number"
                     placeholder="e.g., 150"
@@ -242,7 +347,10 @@ export default function SafeHarbourPage() {
                     Maximum threshold:{" "}
                     {isLoanType || selectedType === "GUARANTEE"
                       ? "Rs. 100 Crore"
-                      : "Rs. 200 Crore"}
+                      : "Rs. 200 Crore"}{" "}
+                    <span className="text-[var(--warning)]">
+                      (Transactions above this limit are not eligible for Safe Harbour)
+                    </span>
                   </p>
                 </div>
 
@@ -251,7 +359,12 @@ export default function SafeHarbourPage() {
                   <>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Operating Profit (Rs.)</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Operating Profit (Rs.)</Label>
+                          <Tooltip content="Profit from operations before interest and taxes. Operating Profit = Operating Revenue - Operating Costs. This is used to calculate the OP/OC margin.">
+                            <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                          </Tooltip>
+                        </div>
                         <Input
                           type="number"
                           placeholder="e.g., 50000000"
@@ -260,7 +373,12 @@ export default function SafeHarbourPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Operating Cost (Rs.)</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Operating Cost (Rs.)</Label>
+                          <Tooltip content="Total operating expenses including cost of services, employee costs, depreciation, and other operating expenses. Does not include interest and taxes.">
+                            <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                          </Tooltip>
+                        </div>
                         <Input
                           type="number"
                           placeholder="e.g., 250000000"
@@ -273,7 +391,12 @@ export default function SafeHarbourPage() {
                     {/* Employee Cost for KPO */}
                     {isKPO && (
                       <div className="space-y-2">
-                        <Label>Employee Cost (Rs.)</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Employee Cost (Rs.)</Label>
+                          <Tooltip content="Total cost of employees including salaries, bonuses, benefits, and payroll taxes. For KPO, if employee cost is ≥60% of operating cost, lower margin threshold applies.">
+                            <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                          </Tooltip>
+                        </div>
                         <Input
                           type="number"
                           placeholder="e.g., 100000000"
@@ -281,7 +404,9 @@ export default function SafeHarbourPage() {
                           onChange={(e) => setEmployeeCost(e.target.value)}
                         />
                         <p className="text-xs text-[var(--text-muted)]">
-                          Required for KPO - determines margin threshold (18%/21%/24%)
+                          Required for KPO - determines margin threshold:
+                          <span className="text-[var(--accent)]"> ≥60% employee cost → 18%</span>,
+                          <span className="text-[var(--warning)]"> &lt;60% → 21%/24%</span>
                         </p>
                       </div>
                     )}
@@ -289,12 +414,22 @@ export default function SafeHarbourPage() {
                     {/* Calculated Margin Display */}
                     {calculateMargin() !== null && (
                       <div className="rounded-lg bg-[var(--bg-secondary)] p-4">
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          Calculated OP/OC Margin
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-[var(--text-secondary)]">
+                            Calculated <GlossaryTermLink term="OP/OC">OP/OC Margin</GlossaryTermLink>
+                          </p>
+                          <Tooltip content="Operating Profit / Operating Cost × 100. This ratio must meet or exceed the safe harbour threshold for your transaction type and value.">
+                            <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                          </Tooltip>
+                        </div>
                         <p className="text-2xl font-bold text-[var(--accent)]">
                           {calculateMargin()?.toFixed(2)}%
                         </p>
+                        {rule && rule.thresholds[0] && typeof rule.thresholds[0].margin === "number" && (
+                          <p className="text-xs mt-1 text-[var(--text-muted)]">
+                            Required: ≥{rule.thresholds[0].margin}% for your transaction type
+                          </p>
+                        )}
                       </div>
                     )}
                   </>
@@ -303,19 +438,27 @@ export default function SafeHarbourPage() {
                 {/* Loan Type Fields */}
                 {isLoanType && (
                   <div className="space-y-2">
-                    <Label>Credit Rating</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Credit Rating</Label>
+                      <Tooltip content="Credit rating of the borrower (AE). Higher credit rating means lower interest rate spread allowed under Safe Harbour. Use rating from recognized agencies like CRISIL, ICRA, etc.">
+                        <Info className="h-4 w-4 text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help" />
+                      </Tooltip>
+                    </div>
                     <Select value={creditRating} onValueChange={setCreditRating}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select credit rating" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="AAA/AA">AAA / AA</SelectItem>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="BBB">BBB</SelectItem>
-                        <SelectItem value="BB">BB</SelectItem>
-                        <SelectItem value="B/C/D">B / C / D</SelectItem>
+                        <SelectItem value="AAA/AA">AAA / AA (Lowest spread: 150-175 bps)</SelectItem>
+                        <SelectItem value="A">A (Spread: 175-200 bps)</SelectItem>
+                        <SelectItem value="BBB">BBB (Spread: 200-275 bps)</SelectItem>
+                        <SelectItem value="BB">BB (Spread: 275-350 bps)</SelectItem>
+                        <SelectItem value="B/C/D">B / C / D (Highest spread: 350-450 bps)</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Safe Harbour interest rate = SBI Base Rate + Spread based on credit rating
+                    </p>
                   </div>
                 )}
 
