@@ -4,6 +4,7 @@ import {
   checkPermission,
   PermissionAction,
 } from "@/lib/api/permissions";
+import { canAccessClient } from "@/lib/api/auth";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,24 +21,55 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    // Find client with tenant isolation
+    // Find client with firm isolation first
     const client = await prisma.client.findFirst({
       where: {
         id,
-        firmId: user.firmId, // Ensure user can only access their firm's clients
+        firmId: user.firmId,
       },
       include: {
+        assignedTo: {
+          select: { id: true, name: true, email: true },
+        },
+        reviewer: {
+          select: { id: true, name: true, email: true },
+        },
         engagements: {
           orderBy: { createdAt: "desc" },
         },
         documents: {
           orderBy: { uploadedAt: "desc" },
         },
+        associatedEnterprises: true,
       },
     });
 
     if (!client) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    }
+
+    // Check user-level access based on role
+    const hasAccess = canAccessClient(
+      {
+        id: user.id,
+        email: user.email || "",
+        name: user.name || null,
+        role: user.role,
+        firmId: user.firmId,
+        firmName: user.firmName || null,
+      },
+      {
+        firmId: client.firmId,
+        assignedToId: client.assignedToId,
+        reviewerId: client.reviewerId,
+      }
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "Access denied", message: "You don't have access to this client" },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({ client });
@@ -72,6 +104,30 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!existingClient) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    }
+
+    // Check user-level access
+    const hasAccess = canAccessClient(
+      {
+        id: user.id,
+        email: user.email || "",
+        name: user.name || null,
+        role: user.role,
+        firmId: user.firmId,
+        firmName: user.firmName || null,
+      },
+      {
+        firmId: existingClient.firmId,
+        assignedToId: existingClient.assignedToId,
+        reviewerId: existingClient.reviewerId,
+      }
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "Access denied", message: "You don't have access to update this client" },
+        { status: 403 }
+      );
     }
 
     // Validate PAN if being updated
@@ -140,6 +196,30 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!existingClient) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    }
+
+    // Check user-level access (only Admin/Partner can delete)
+    const hasAccess = canAccessClient(
+      {
+        id: user.id,
+        email: user.email || "",
+        name: user.name || null,
+        role: user.role,
+        firmId: user.firmId,
+        firmName: user.firmName || null,
+      },
+      {
+        firmId: existingClient.firmId,
+        assignedToId: existingClient.assignedToId,
+        reviewerId: existingClient.reviewerId,
+      }
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "Access denied", message: "You don't have access to delete this client" },
+        { status: 403 }
+      );
     }
 
     // Delete client (cascade will handle engagements and documents)

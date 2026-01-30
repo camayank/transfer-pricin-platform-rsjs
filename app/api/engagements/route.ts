@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { firmFilterThroughClient } from "@/lib/api/auth";
+import { buildEngagementAccessFilter, canAccessClient } from "@/lib/api/auth";
 import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import { EngagementStatus, Priority } from "@prisma/client";
 
-// GET /api/engagements - Get all engagements for the user's firm
+// GET /api/engagements - Get engagements based on user's role and client access
 export async function GET(request: NextRequest) {
   try {
     // Check for engagements READ permission
@@ -16,11 +16,20 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const year = searchParams.get("year");
 
-    // Build where clause with firm filter for security
-    const where: Record<string, unknown> = {
-      // SECURITY: Always filter by firm through client relation
-      ...firmFilterThroughClient(user.firmId),
-    };
+    // Build where clause with user-level access filtering
+    // - Admin/Partner/Senior Manager: See ALL firm engagements
+    // - Manager: See engagements for clients they are assigned to or reviewing
+    // - Associate/Trainee: See engagements for clients they are assigned to
+    const accessFilter = buildEngagementAccessFilter({
+      id: user.id,
+      email: user.email || "",
+      name: user.name || null,
+      role: user.role,
+      firmId: user.firmId,
+      firmName: user.firmName || null,
+    });
+
+    const where: Record<string, unknown> = { ...accessFilter };
 
     if (clientId) {
       where.clientId = clientId;
@@ -43,6 +52,8 @@ export async function GET(request: NextRequest) {
             name: true,
             pan: true,
             industry: true,
+            assignedToId: true,
+            reviewerId: true,
           },
         },
         _count: {
@@ -106,6 +117,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Client not found" },
         { status: 404 }
+      );
+    }
+
+    // Check user-level access to the client
+    const hasAccess = canAccessClient(
+      {
+        id: user.id,
+        email: user.email || "",
+        name: user.name || null,
+        role: user.role,
+        firmId: user.firmId,
+        firmName: user.firmName || null,
+      },
+      {
+        firmId: client.firmId,
+        assignedToId: client.assignedToId,
+        reviewerId: client.reviewerId,
+      }
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: "Access denied", message: "You don't have access to this client" },
+        { status: 403 }
       );
     }
 

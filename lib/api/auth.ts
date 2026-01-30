@@ -162,3 +162,114 @@ export function firmFilterThroughClient(firmId: string) {
     },
   };
 }
+
+/**
+ * Roles that can see ALL clients in their firm (no user-level filtering)
+ */
+const FULL_ACCESS_ROLES = ["SUPER_ADMIN", "ADMIN", "PARTNER", "SENIOR_MANAGER"];
+
+/**
+ * Roles that can see clients they are assigned to OR reviewing
+ */
+const ASSIGNED_OR_REVIEWER_ROLES = ["MANAGER", "OPERATIONS_MANAGER", "COMPLIANCE_MANAGER"];
+
+/**
+ * Build client filter based on user role
+ * - Admin/Partner/Senior Manager: See ALL clients in firm
+ * - Manager: See clients where assignedTo OR reviewer
+ * - Associate/Trainee: See only clients where assignedTo
+ *
+ * Usage:
+ * ```ts
+ * const where = buildClientAccessFilter(user);
+ * const clients = await prisma.client.findMany({ where });
+ * ```
+ */
+export function buildClientAccessFilter(user: AuthenticatedUser): Record<string, unknown> {
+  // Base filter: always filter by firm
+  const baseFilter = { firmId: user.firmId };
+
+  // Full access roles see all firm clients
+  if (FULL_ACCESS_ROLES.includes(user.role)) {
+    return baseFilter;
+  }
+
+  // Manager-level roles see assigned + reviewing clients
+  if (ASSIGNED_OR_REVIEWER_ROLES.includes(user.role)) {
+    return {
+      ...baseFilter,
+      OR: [
+        { assignedToId: user.id },
+        { reviewerId: user.id },
+      ],
+    };
+  }
+
+  // Associate/Trainee/Others see only assigned clients
+  return {
+    ...baseFilter,
+    assignedToId: user.id,
+  };
+}
+
+/**
+ * Check if user has access to a specific client
+ */
+export function canAccessClient(
+  user: AuthenticatedUser,
+  client: { firmId: string; assignedToId?: string | null; reviewerId?: string | null }
+): boolean {
+  // Must be same firm
+  if (client.firmId !== user.firmId) {
+    return false;
+  }
+
+  // Full access roles can access any client in their firm
+  if (FULL_ACCESS_ROLES.includes(user.role)) {
+    return true;
+  }
+
+  // Manager-level roles can access if assigned or reviewer
+  if (ASSIGNED_OR_REVIEWER_ROLES.includes(user.role)) {
+    return client.assignedToId === user.id || client.reviewerId === user.id;
+  }
+
+  // Others can only access if assigned
+  return client.assignedToId === user.id;
+}
+
+/**
+ * Build engagement filter based on user's client access
+ * Filters engagements through the client relationship
+ */
+export function buildEngagementAccessFilter(user: AuthenticatedUser): Record<string, unknown> {
+  // Full access roles see all firm engagements
+  if (FULL_ACCESS_ROLES.includes(user.role)) {
+    return {
+      client: {
+        firmId: user.firmId,
+      },
+    };
+  }
+
+  // Manager-level roles see engagements for their clients
+  if (ASSIGNED_OR_REVIEWER_ROLES.includes(user.role)) {
+    return {
+      client: {
+        firmId: user.firmId,
+        OR: [
+          { assignedToId: user.id },
+          { reviewerId: user.id },
+        ],
+      },
+    };
+  }
+
+  // Others see only engagements for assigned clients
+  return {
+    client: {
+      firmId: user.firmId,
+      assignedToId: user.id,
+    },
+  };
+}

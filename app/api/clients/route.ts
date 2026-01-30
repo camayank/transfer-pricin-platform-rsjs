@@ -4,8 +4,9 @@ import {
   checkPermission,
   PermissionAction,
 } from "@/lib/api/permissions";
+import { buildClientAccessFilter } from "@/lib/api/auth";
 
-// GET /api/clients - Get all clients for the firm
+// GET /api/clients - Get clients based on user's role and access level
 export async function GET(request: NextRequest) {
   try {
     // Check READ permission on clients
@@ -18,11 +19,22 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const industry = searchParams.get("industry");
     const search = searchParams.get("search");
+    const showAll = searchParams.get("all") === "true"; // Admin can request all clients
 
-    // Build where clause - always filter by firmId for tenant isolation
-    const where: Record<string, unknown> = {
+    // Build where clause based on user role
+    // - Admin/Partner/Senior Manager: See ALL clients in firm
+    // - Manager: See clients where assignedTo OR reviewer
+    // - Associate/Trainee: See only clients where assignedTo
+    const baseFilter = buildClientAccessFilter({
+      id: user.id,
+      email: user.email || "",
+      name: user.name || null,
+      role: user.role,
       firmId: user.firmId,
-    };
+      firmName: user.firmName || null,
+    });
+
+    const where: Record<string, unknown> = { ...baseFilter };
 
     if (status && status !== "all") {
       where.status = status;
@@ -32,16 +44,37 @@ export async function GET(request: NextRequest) {
       where.industry = industry;
     }
 
+    // Handle search with existing filters
     if (search) {
-      where.OR = [
+      // If we have OR conditions from role filtering, we need to AND them with search
+      const existingOr = where.OR;
+      delete where.OR;
+
+      const searchConditions = [
         { name: { contains: search, mode: "insensitive" } },
         { pan: { contains: search, mode: "insensitive" } },
       ];
+
+      if (existingOr) {
+        // Combine role-based OR with search OR using AND
+        where.AND = [
+          { OR: existingOr },
+          { OR: searchConditions },
+        ];
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     const clients = await prisma.client.findMany({
       where,
       include: {
+        assignedTo: {
+          select: { id: true, name: true, email: true },
+        },
+        reviewer: {
+          select: { id: true, name: true, email: true },
+        },
         engagements: {
           orderBy: { createdAt: "desc" },
           take: 1,
