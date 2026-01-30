@@ -366,6 +366,7 @@ model ImmutableAuditLog {
 // ============== ENUMS ==============
 
 enum Role {
+  // Hierarchical roles (highest to lowest privilege)
   SUPER_ADMIN
   ADMIN
   PARTNER
@@ -373,6 +374,11 @@ enum Role {
   MANAGER
   ASSOCIATE
   TRAINEE
+  // Functional roles (TP-specific department roles)
+  OPERATIONS
+  OPERATIONS_MANAGER
+  COMPLIANCE
+  COMPLIANCE_MANAGER
 }
 
 enum UserStatus {

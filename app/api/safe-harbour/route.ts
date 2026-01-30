@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import {
   SafeHarbourCalculator,
   TransactionType,
@@ -10,6 +11,10 @@ import {
 // POST /api/safe-harbour - Calculate Safe Harbour eligibility
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+    if (!authorized) return error;
+
     const body = await request.json();
 
     const {
@@ -169,6 +174,10 @@ export async function POST(request: NextRequest) {
 
 // GET /api/safe-harbour/rules - Get all Safe Harbour rules
 export async function GET() {
+  // Check authentication and permission
+  const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+  if (!authorized) return error;
+
   // Format rules for display
   const formattedRules: Record<string, unknown> = {};
 

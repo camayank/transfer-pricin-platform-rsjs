@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import {
   BenchmarkingEngine,
   PLIType,
@@ -142,6 +143,10 @@ function determineArmLengthCompliance(
 // POST /api/benchmarking - Calculate benchmarking analysis
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+    if (!authorized) return error;
+
     const body: BenchmarkingRequest = await request.json();
     const { comparables, testedPartyMargin, pliType, testedPartyName, testedPartyFinancials, searchCriteria } = body;
 
@@ -333,6 +338,10 @@ export async function POST(request: NextRequest) {
 
 // GET /api/benchmarking/comparables - Get sample comparables
 export async function GET(request: NextRequest) {
+  // Check authentication and permission
+  const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+  if (!authorized) return error;
+
   const searchParams = request.nextUrl.searchParams;
   const industry = searchParams.get("industry");
   const nicCode = searchParams.get("nicCode");

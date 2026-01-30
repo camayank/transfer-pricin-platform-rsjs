@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import {
   PenaltyEngine,
   PenaltyAIService,
@@ -39,6 +40,10 @@ interface InterestCalculationRequest {
 // POST /api/penalty - Calculate penalty exposure
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+    if (!authorized) return error;
+
     const body: PenaltyExposureRequest = await request.json();
     const {
       adjustmentAmount,
@@ -129,6 +134,10 @@ export async function POST(request: NextRequest) {
 // PUT /api/penalty - Calculate interest under Section 234A/B/C/D
 export async function PUT(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+    if (!authorized) return error;
+
     const body: InterestCalculationRequest = await request.json();
     const { section, taxAmount, dueDate, paymentDate, advanceTaxPaid, assessedTax, refundGranted } =
       body;
@@ -203,6 +212,10 @@ export async function PUT(request: NextRequest) {
 
 // GET /api/penalty - Get penalty rates and rules
 export async function GET(request: NextRequest) {
+  // Check authentication and permission
+  const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+  if (!authorized) return error;
+
   const searchParams = request.nextUrl.searchParams;
   const section = searchParams.get("section");
 

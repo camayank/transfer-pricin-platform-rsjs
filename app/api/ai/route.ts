@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import {
   getTPDocumentGenerator,
   PromptType,
@@ -22,6 +23,10 @@ import {
 // =============================================================================
 
 export async function GET() {
+  // Check authentication and permission
+  const { authorized, error } = await checkPermission("ai", PermissionAction.READ);
+  if (!authorized) return error;
+
   const configured = isAIConfigured();
   const providers = getConfiguredProviders();
 
@@ -100,6 +105,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("ai", PermissionAction.READ);
+    if (!authorized) return error;
+
     // Check if AI is configured
     if (!isAIConfigured()) {
       return NextResponse.json(

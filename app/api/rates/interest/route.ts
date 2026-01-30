@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 import {
   createInterestRateEngine,
   InterestRateType,
@@ -18,6 +19,10 @@ const engine = createInterestRateEngine();
  * Get capabilities and supported rates
  */
 export async function GET() {
+  // Check authentication and permission
+  const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+  if (!authorized) return error;
+
   return NextResponse.json({
     status: "ready",
     version: INTEREST_RATE_ENGINE_VERSION,
@@ -50,6 +55,10 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication and permission
+    const { authorized, error } = await checkPermission("tools", PermissionAction.READ);
+    if (!authorized) return error;
+
     const body = await request.json();
     const { action, params } = body;
 
