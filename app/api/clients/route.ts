@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import {
+  checkPermission,
+  PermissionAction,
+} from "@/lib/api/permissions";
 
 // GET /api/clients - Get all clients for the firm
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check READ permission on clients
+    const { authorized, user, error } = await checkPermission("clients", PermissionAction.READ);
+    if (!authorized || !user) {
+      return error;
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -16,8 +19,10 @@ export async function GET(request: NextRequest) {
     const industry = searchParams.get("industry");
     const search = searchParams.get("search");
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    // Build where clause - always filter by firmId for tenant isolation
+    const where: Record<string, unknown> = {
+      firmId: user.firmId,
+    };
 
     if (status && status !== "all") {
       where.status = status;
@@ -58,10 +63,10 @@ export async function GET(request: NextRequest) {
 // POST /api/clients - Create a new client
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check CREATE permission on clients
+    const { authorized, user, error } = await checkPermission("clients", PermissionAction.CREATE);
+    if (!authorized || !user) {
+      return error;
     }
 
     const body = await request.json();
@@ -88,13 +93,12 @@ export async function POST(request: NextRequest) {
       ultimateParent,
       ultimateParentCountry,
       consolidatedRevenue,
-      firmId,
     } = body;
 
     // Validate required fields
-    if (!name || !pan || !firmId) {
+    if (!name || !pan) {
       return NextResponse.json(
-        { error: "Name, PAN, and Firm ID are required" },
+        { error: "Name and PAN are required" },
         { status: 400 }
       );
     }
@@ -110,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Check if client with this PAN already exists for the firm
     const existingClient = await prisma.client.findFirst({
-      where: { pan, firmId },
+      where: { pan, firmId: user.firmId },
     });
 
     if (existingClient) {
@@ -143,7 +147,7 @@ export async function POST(request: NextRequest) {
         ultimateParent,
         ultimateParentCountry,
         consolidatedRevenue,
-        firmId,
+        firmId: user.firmId, // Use authenticated user's firmId
       },
     });
 

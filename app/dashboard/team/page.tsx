@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import {
   Users,
-  Plus,
   Search,
   Mail,
   Phone,
@@ -25,113 +24,151 @@ import {
   Trash2,
   UserPlus,
   Building2,
-  Calendar,
-  FileText,
   X,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import {
+  useUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeactivateUser,
+  type User,
+  type CreateUserInput,
+} from "@/lib/hooks";
+import { LoadingState, StatCardSkeleton } from "@/components/ui/loading";
+import { ErrorState } from "@/components/ui/error-state";
 
-// Sample team data
-const teamMembers = [
-  {
-    id: "1",
-    name: "Priya Sharma",
-    email: "priya@kumarassociates.com",
-    phone: "9876543210",
-    role: "partner",
-    membershipNo: "123456",
-    status: "active",
-    joinedAt: "2020-04-15",
-    clientsAssigned: 12,
-    engagementsActive: 8,
-  },
-  {
-    id: "2",
-    name: "Rahul Mehta",
-    email: "rahul@kumarassociates.com",
-    phone: "9876543211",
-    role: "manager",
-    membershipNo: "234567",
-    status: "active",
-    joinedAt: "2021-06-01",
-    clientsAssigned: 8,
-    engagementsActive: 5,
-  },
-  {
-    id: "3",
-    name: "Amit Kumar",
-    email: "amit@kumarassociates.com",
-    phone: "9876543212",
-    role: "staff",
-    membershipNo: "345678",
-    status: "active",
-    joinedAt: "2022-01-10",
-    clientsAssigned: 5,
-    engagementsActive: 4,
-  },
-  {
-    id: "4",
-    name: "Sneha Reddy",
-    email: "sneha@kumarassociates.com",
-    phone: "9876543213",
-    role: "staff",
-    membershipNo: "456789",
-    status: "active",
-    joinedAt: "2023-03-20",
-    clientsAssigned: 4,
-    engagementsActive: 3,
-  },
-  {
-    id: "5",
-    name: "Vikram Patel",
-    email: "vikram@kumarassociates.com",
-    phone: "9876543214",
-    role: "manager",
-    membershipNo: "567890",
-    status: "invited",
-    joinedAt: "2024-01-05",
-    clientsAssigned: 0,
-    engagementsActive: 0,
-  },
-];
-
-const roleConfig: Record<string, { label: string; variant: "info" | "warning" | "secondary" | "success" }> = {
-  admin: { label: "Admin", variant: "info" },
-  partner: { label: "Partner", variant: "success" },
-  manager: { label: "Manager", variant: "warning" },
-  staff: { label: "Staff", variant: "secondary" },
+// Map backend roles to UI display
+const roleConfig: Record<string, { label: string; variant: "info" | "warning" | "secondary" | "success" | "error" }> = {
+  SUPER_ADMIN: { label: "Super Admin", variant: "error" },
+  ADMIN: { label: "Admin", variant: "info" },
+  PARTNER: { label: "Partner", variant: "success" },
+  SENIOR_MANAGER: { label: "Senior Manager", variant: "warning" },
+  MANAGER: { label: "Manager", variant: "warning" },
+  ASSOCIATE: { label: "Associate", variant: "secondary" },
+  TRAINEE: { label: "Trainee", variant: "secondary" },
 };
 
 const statusConfig: Record<string, { label: string; variant: "success" | "warning" | "secondary" }> = {
-  active: { label: "Active", variant: "success" },
-  invited: { label: "Invited", variant: "warning" },
-  inactive: { label: "Inactive", variant: "secondary" },
+  ACTIVE: { label: "Active", variant: "success" },
+  INVITED: { label: "Invited", variant: "warning" },
+  INACTIVE: { label: "Inactive", variant: "secondary" },
+  SUSPENDED: { label: "Suspended", variant: "secondary" },
 };
 
-const rolePermissions = {
-  admin: ["Manage firm settings", "Manage team", "Manage billing", "All client access", "All tools access"],
-  partner: ["View firm settings", "Invite team members", "All client access", "All tools access"],
-  manager: ["Assigned clients only", "All tools access", "Generate reports"],
-  staff: ["Assigned clients only", "Limited tool access"],
+const rolePermissions: Record<string, string[]> = {
+  SUPER_ADMIN: ["Full system access", "Manage all tenants", "System configuration", "All permissions"],
+  ADMIN: ["Manage firm settings", "Manage team", "Manage billing", "All client access", "All tools access"],
+  PARTNER: ["View firm settings", "Invite team members", "All client access", "All tools access", "Approve work"],
+  SENIOR_MANAGER: ["Manage assigned clients", "All tools access", "Generate reports", "Approve work"],
+  MANAGER: ["Assigned clients only", "All tools access", "Generate reports"],
+  ASSOCIATE: ["Assigned clients only", "Limited tool access", "Submit for review"],
+  TRAINEE: ["View assigned work", "Limited tool access"],
 };
+
+// Available roles for invite (excluding SUPER_ADMIN)
+const invitableRoles = ["PARTNER", "SENIOR_MANAGER", "MANAGER", "ASSOCIATE", "TRAINEE"];
 
 export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "",
+    department: "",
+    title: "",
+    phone: "",
+  });
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
-  // Filter team members
-  const filteredMembers = teamMembers.filter((member) => {
-    const matchesSearch =
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || member.role === roleFilter;
-    return matchesSearch && matchesRole;
+  // Fetch users from API
+  const { data, isLoading, error, refetch } = useUsers({
+    role: roleFilter !== "all" ? roleFilter : undefined,
+    search: searchQuery || undefined,
   });
 
-  // Stats
-  const totalMembers = teamMembers.length;
-  const activeMembers = teamMembers.filter((m) => m.status === "active").length;
-  const pendingInvites = teamMembers.filter((m) => m.status === "invited").length;
+  // Mutations
+  const createUserMutation = useCreateUser();
+  const deactivateUserMutation = useDeactivateUser();
+
+  const users = data?.users || [];
+  const pagination = data?.pagination;
+
+  // Stats calculated from live data
+  const totalMembers = pagination?.total || users.length;
+  const activeMembers = users.filter((u) => u.status === "ACTIVE").length;
+  const pendingInvites = users.filter((u) => u.status === "INVITED").length;
+
+  // Handle invite form submission
+  const handleInvite = async () => {
+    setInviteError(null);
+
+    if (!inviteForm.name || !inviteForm.email || !inviteForm.password || !inviteForm.role) {
+      setInviteError("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      await createUserMutation.mutateAsync({
+        name: inviteForm.name,
+        email: inviteForm.email,
+        password: inviteForm.password,
+        role: inviteForm.role,
+        department: inviteForm.department || undefined,
+        title: inviteForm.title || undefined,
+        phone: inviteForm.phone || undefined,
+      });
+
+      // Reset form and close modal
+      setInviteForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "",
+        department: "",
+        title: "",
+        phone: "",
+      });
+      setShowInviteModal(false);
+      refetch();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Failed to invite user");
+    }
+  };
+
+  // Handle user deactivation
+  const handleDeactivate = async (userId: string) => {
+    if (!confirm("Are you sure you want to deactivate this user?")) return;
+
+    try {
+      await deactivateUserMutation.mutateAsync(userId);
+      refetch();
+    } catch (err) {
+      console.error("Failed to deactivate user:", err);
+    }
+  };
+
+  // Get initials from name
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Format date
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -151,66 +188,77 @@ export default function TeamPage() {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[var(--accent-glow)] p-2 text-[var(--accent)]">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {totalMembers}
-                </p>
-                <p className="text-sm text-[var(--text-muted)]">Total Members</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[var(--success-bg)] p-2 text-[var(--success)]">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {activeMembers}
-                </p>
-                <p className="text-sm text-[var(--text-muted)]">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[var(--warning-bg)] p-2 text-[var(--warning)]">
-                <Mail className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {pendingInvites}
-                </p>
-                <p className="text-sm text-[var(--text-muted)]">Pending Invites</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[var(--info-bg)] p-2 text-[var(--info)]">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {teamMembers.reduce((sum, m) => sum + m.clientsAssigned, 0)}
-                </p>
-                <p className="text-sm text-[var(--text-muted)]">Total Assignments</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-[var(--accent-glow)] p-2 text-[var(--accent)]">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                      {totalMembers}
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)]">Total Members</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-[var(--success-bg)] p-2 text-[var(--success)]">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                      {activeMembers}
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)]">Active</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-[var(--warning-bg)] p-2 text-[var(--warning)]">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                      {pendingInvites}
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)]">Pending Invites</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-[var(--info-bg)] p-2 text-[var(--info)]">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                      {Object.keys(roleConfig).length}
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)]">Role Types</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Filters */}
@@ -241,7 +289,15 @@ export default function TeamPage() {
 
       {/* Team List */}
       <div className="space-y-4">
-        {filteredMembers.length === 0 ? (
+        {isLoading ? (
+          <LoadingState message="Loading team members..." />
+        ) : error ? (
+          <ErrorState
+            title="Failed to load team"
+            message={error instanceof Error ? error.message : "An error occurred"}
+            onRetry={() => refetch()}
+          />
+        ) : users.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-[var(--text-muted)]" />
@@ -249,72 +305,101 @@ export default function TeamPage() {
                 No team members found
               </p>
               <p className="text-[var(--text-secondary)]">
-                Try adjusting your search or filters
+                {searchQuery || roleFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Invite your first team member to get started"}
               </p>
+              {!searchQuery && roleFilter === "all" && (
+                <Button onClick={() => setShowInviteModal(true)} className="mt-4">
+                  <UserPlus className="mr-1 h-4 w-4" />
+                  Invite Member
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          filteredMembers.map((member) => (
-            <Card key={member.id} className="hover:border-[var(--border-default)] transition-colors">
+          users.map((user) => (
+            <Card key={user.id} className="hover:border-[var(--border-default)] transition-colors">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-glow)] text-lg font-semibold text-[var(--accent)]">
-                      {member.name.split(" ").map((n) => n[0]).join("")}
+                      {getInitials(user.name)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium text-[var(--text-primary)]">
-                          {member.name}
+                          {user.name}
                         </h3>
-                        <Badge variant={roleConfig[member.role].variant}>
-                          {roleConfig[member.role].label}
+                        <Badge variant={roleConfig[user.role]?.variant || "secondary"}>
+                          {roleConfig[user.role]?.label || user.role}
                         </Badge>
-                        <Badge variant={statusConfig[member.status].variant}>
-                          {statusConfig[member.status].label}
+                        <Badge variant={statusConfig[user.status]?.variant || "secondary"}>
+                          {statusConfig[user.status]?.label || user.status}
                         </Badge>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
-                          {member.email}
+                          {user.email}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {member.phone}
-                        </span>
-                        {member.membershipNo && (
-                          <span>ICAI: {member.membershipNo}</span>
+                        {user.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {user.phone}
+                          </span>
+                        )}
+                        {user.department && (
+                          <span className="text-[var(--text-secondary)]">
+                            {user.department}
+                          </span>
+                        )}
+                        {user.title && (
+                          <span className="text-[var(--text-secondary)]">
+                            • {user.title}
+                          </span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">
-                    <div className="hidden text-center md:block">
-                      <p className="text-lg font-semibold text-[var(--text-primary)]">
-                        {member.clientsAssigned}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)]">Clients</p>
-                    </div>
-                    <div className="hidden text-center md:block">
-                      <p className="text-lg font-semibold text-[var(--text-primary)]">
-                        {member.engagementsActive}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)]">Active</p>
-                    </div>
+                    {user.managerName && (
+                      <div className="hidden text-right md:block">
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Reports to
+                        </p>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {user.managerName}
+                        </p>
+                      </div>
+                    )}
                     <div className="hidden text-right md:block">
                       <p className="text-sm text-[var(--text-secondary)]">
-                        Joined {new Date(member.joinedAt).toLocaleDateString("en-IN", {
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        Joined {formatDate(user.createdAt)}
                       </p>
+                      {user.lastLoginAt && (
+                        <p className="text-xs text-[var(--text-muted)]">
+                          Last login: {formatDate(user.lastLoginAt)}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <span title="Edit user">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </span>
+                      <span title="Deactivate user">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeactivate(user.id)}
+                          disabled={deactivateUserMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </span>
                       <Button variant="ghost" size="sm">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -326,6 +411,13 @@ export default function TeamPage() {
           ))
         )}
       </div>
+
+      {/* Pagination Info */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center text-sm text-[var(--text-muted)]">
+          Page {pagination.page} of {pagination.totalPages} • {pagination.total} total members
+        </div>
+      )}
 
       {/* Role Permissions */}
       <Card>
@@ -375,48 +467,133 @@ export default function TeamPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowInviteModal(false)}
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setInviteError(null);
+                  }}
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               <CardDescription>
-                Send an invitation to join your firm
+                Add a new member to your team
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {inviteError && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20">
+                  <AlertCircle className="h-4 w-4" />
+                  {inviteError}
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="inviteName">Full Name</Label>
-                <Input id="inviteName" placeholder="Enter full name" />
+                <Label htmlFor="inviteName">Full Name *</Label>
+                <Input
+                  id="inviteName"
+                  placeholder="Enter full name"
+                  value={inviteForm.name}
+                  onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="inviteEmail">Email Address</Label>
-                <Input id="inviteEmail" type="email" placeholder="Enter email address" />
+                <Label htmlFor="inviteEmail">Email Address *</Label>
+                <Input
+                  id="inviteEmail"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="inviteRole">Role</Label>
-                <Select>
+                <Label htmlFor="invitePassword">Initial Password *</Label>
+                <Input
+                  id="invitePassword"
+                  type="password"
+                  placeholder="Set initial password"
+                  value={inviteForm.password}
+                  onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="inviteRole">Role *</Label>
+                <Select
+                  value={inviteForm.role}
+                  onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="partner">Partner</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
+                    {invitableRoles.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {roleConfig[role]?.label || role}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="inviteMembership">ICAI Membership No (Optional)</Label>
-                <Input id="inviteMembership" placeholder="Enter membership number" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="inviteDepartment">Department</Label>
+                  <Input
+                    id="inviteDepartment"
+                    placeholder="e.g., Tax, Audit"
+                    value={inviteForm.department}
+                    onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="inviteTitle">Title</Label>
+                  <Input
+                    id="inviteTitle"
+                    placeholder="e.g., CA"
+                    value={inviteForm.title}
+                    onChange={(e) => setInviteForm({ ...inviteForm, title: e.target.value })}
+                  />
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invitePhone">Phone Number</Label>
+                <Input
+                  id="invitePhone"
+                  placeholder="Enter phone number"
+                  value={inviteForm.phone}
+                  onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setShowInviteModal(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setInviteError(null);
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button onClick={() => setShowInviteModal(false)}>
-                  <Mail className="mr-1 h-4 w-4" />
-                  Send Invitation
+                <Button
+                  onClick={handleInvite}
+                  disabled={createUserMutation.isPending}
+                >
+                  {createUserMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-1 h-4 w-4" />
+                      Create User
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>

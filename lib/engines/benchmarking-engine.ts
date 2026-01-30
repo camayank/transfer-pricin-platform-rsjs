@@ -757,6 +757,486 @@ export class BenchmarkingEngine {
   }
 }
 
+// =============================================================================
+// MULTI-YEAR TESTING ENHANCEMENTS
+// =============================================================================
+
+export interface MultiYearTestingConfig {
+  yearsToAnalyze: number; // Typically 3 years
+  weightingMethod: "equal" | "revenue_weighted" | "recency_weighted";
+  excludeExceptionalYears: boolean;
+  exceptionalYearThreshold: number; // Standard deviations from mean
+  cyclicalAdjustment: boolean;
+  industryGrowthRate?: number;
+}
+
+export interface YearOnYearTrend {
+  year: string;
+  pliValue: number;
+  growthRate: number | null;
+  isExceptional: boolean;
+  exceptionalReason?: string;
+}
+
+export interface MultiYearAnalysisResult {
+  simpleAverage: number;
+  weightedAverage: number;
+  median: number;
+  trend: "increasing" | "decreasing" | "stable" | "volatile";
+  volatility: number; // Coefficient of variation
+  yearOnYearData: YearOnYearTrend[];
+  exceptionalYearsExcluded: string[];
+  adjustedAverage: number;
+  cyclicalAdjustment: number;
+  methodology: string;
+}
+
+export interface EnhancedBenchmarkingResult extends BenchmarkingResult {
+  multiYearAnalysis: MultiYearAnalysisResult;
+  testedPartyMultiYearAnalysis: MultiYearAnalysisResult;
+  comparableMultiYearData: ComparableMultiYearData[];
+  trendComparison: TrendComparison;
+}
+
+export interface ComparableMultiYearData {
+  companyName: string;
+  cin: string;
+  multiYearAnalysis: MultiYearAnalysisResult;
+  isIncluded: boolean;
+  exclusionReason?: string;
+}
+
+export interface TrendComparison {
+  testedPartyTrend: "increasing" | "decreasing" | "stable" | "volatile";
+  comparablesTrend: "increasing" | "decreasing" | "stable" | "volatile";
+  trendAlignment: boolean;
+  trendAnalysisNarrative: string;
+}
+
+/**
+ * Multi-Year Testing Engine - Enhances benchmarking with comprehensive multi-year analysis
+ */
+export class MultiYearTestingEngine {
+  private config: MultiYearTestingConfig;
+
+  constructor(config?: Partial<MultiYearTestingConfig>) {
+    this.config = {
+      yearsToAnalyze: 3,
+      weightingMethod: "revenue_weighted",
+      excludeExceptionalYears: true,
+      exceptionalYearThreshold: 2.0, // 2 standard deviations
+      cyclicalAdjustment: false,
+      industryGrowthRate: 0.05,
+      ...config,
+    };
+  }
+
+  /**
+   * Perform comprehensive multi-year analysis for a single entity
+   */
+  analyzeMultiYear(
+    financials: Record<string, FinancialData>,
+    pliType: PLIType,
+    years: string[]
+  ): MultiYearAnalysisResult {
+    // Calculate PLI for each year
+    const yearData: YearOnYearTrend[] = [];
+    const pliValues: number[] = [];
+    const revenues: number[] = [];
+
+    const sortedYears = [...years].sort();
+
+    for (const year of sortedYears) {
+      if (financials[year]) {
+        const plis = calculatePLIs(financials[year]);
+        const pliValue = plis[pliType] || 0;
+        pliValues.push(pliValue);
+        revenues.push(financials[year].operatingRevenue || 1);
+
+        const prevIndex = pliValues.length - 2;
+        const growthRate = prevIndex >= 0 && pliValues[prevIndex] !== 0
+          ? ((pliValue - pliValues[prevIndex]) / Math.abs(pliValues[prevIndex])) * 100
+          : null;
+
+        yearData.push({
+          year,
+          pliValue,
+          growthRate,
+          isExceptional: false,
+        });
+      }
+    }
+
+    if (pliValues.length === 0) {
+      return this.getEmptyResult();
+    }
+
+    // Calculate statistics
+    const simpleAverage = pliValues.reduce((sum, v) => sum + v, 0) / pliValues.length;
+    const median = this.calculateMedian(pliValues);
+    const stdDev = this.calculateStdDev(pliValues, simpleAverage);
+    const volatility = simpleAverage !== 0 ? (stdDev / Math.abs(simpleAverage)) * 100 : 0;
+
+    // Identify exceptional years
+    const exceptionalYearsExcluded: string[] = [];
+    if (this.config.excludeExceptionalYears && pliValues.length >= 3) {
+      for (let i = 0; i < yearData.length; i++) {
+        const deviation = Math.abs(yearData[i].pliValue - simpleAverage);
+        if (deviation > this.config.exceptionalYearThreshold * stdDev) {
+          yearData[i].isExceptional = true;
+          yearData[i].exceptionalReason =
+            yearData[i].pliValue > simpleAverage
+              ? "Significantly above average"
+              : "Significantly below average";
+          exceptionalYearsExcluded.push(yearData[i].year);
+        }
+      }
+    }
+
+    // Calculate weighted average
+    let weightedAverage: number;
+    const nonExceptionalData = yearData.filter((y) => !y.isExceptional);
+    const nonExceptionalValues = nonExceptionalData.map((y) => y.pliValue);
+    const nonExceptionalRevenues = nonExceptionalData.map((y) => {
+      const idx = yearData.indexOf(y);
+      return revenues[idx] || 1;
+    });
+
+    switch (this.config.weightingMethod) {
+      case "revenue_weighted":
+        weightedAverage = this.calculateRevenueWeightedAverage(
+          nonExceptionalValues,
+          nonExceptionalRevenues
+        );
+        break;
+      case "recency_weighted":
+        weightedAverage = this.calculateRecencyWeightedAverage(nonExceptionalValues);
+        break;
+      default:
+        weightedAverage = nonExceptionalValues.reduce((sum, v) => sum + v, 0) /
+          (nonExceptionalValues.length || 1);
+    }
+
+    // Determine trend
+    const trend = this.determineTrend(yearData.filter((y) => !y.isExceptional));
+
+    // Apply cyclical adjustment if configured
+    let cyclicalAdjustment = 0;
+    if (this.config.cyclicalAdjustment && this.config.industryGrowthRate) {
+      cyclicalAdjustment = this.calculateCyclicalAdjustment(
+        yearData,
+        this.config.industryGrowthRate
+      );
+    }
+
+    const adjustedAverage = weightedAverage + cyclicalAdjustment;
+
+    return {
+      simpleAverage,
+      weightedAverage,
+      median,
+      trend,
+      volatility,
+      yearOnYearData: yearData,
+      exceptionalYearsExcluded,
+      adjustedAverage,
+      cyclicalAdjustment,
+      methodology: this.generateMethodologyNarrative(),
+    };
+  }
+
+  /**
+   * Perform enhanced benchmarking with multi-year testing
+   */
+  performEnhancedBenchmarking(
+    testedPartyName: string,
+    testedPartyFinancials: Record<string, FinancialData>,
+    pliType: PLIType,
+    searchCriteria: SearchCriteria,
+    baseEngine: BenchmarkingEngine
+  ): EnhancedBenchmarkingResult {
+    // Get base benchmarking result
+    const baseResult = baseEngine.performBenchmarking(
+      testedPartyName,
+      testedPartyFinancials,
+      pliType,
+      searchCriteria
+    );
+
+    // Analyze tested party multi-year
+    const testedPartyMultiYearAnalysis = this.analyzeMultiYear(
+      testedPartyFinancials,
+      pliType,
+      searchCriteria.analysisYears
+    );
+
+    // Analyze each comparable
+    const comparableMultiYearData: ComparableMultiYearData[] = [];
+    for (const company of baseResult.acceptedCompanies) {
+      const analysis = this.analyzeMultiYear(
+        company.financials,
+        pliType,
+        searchCriteria.analysisYears
+      );
+
+      // Check if comparable should be excluded based on volatility
+      const isIncluded = analysis.volatility <= 50; // Exclude if CoV > 50%
+
+      comparableMultiYearData.push({
+        companyName: company.name,
+        cin: company.cin,
+        multiYearAnalysis: analysis,
+        isIncluded,
+        exclusionReason: isIncluded ? undefined : "High volatility (CoV > 50%)",
+      });
+    }
+
+    // Calculate overall multi-year analysis for comparables set
+    const includedComparables = comparableMultiYearData.filter((c) => c.isIncluded);
+    const comparableAverages = includedComparables.map((c) => c.multiYearAnalysis.adjustedAverage);
+
+    const multiYearAnalysis: MultiYearAnalysisResult = {
+      simpleAverage: comparableAverages.reduce((sum, v) => sum + v, 0) /
+        (comparableAverages.length || 1),
+      weightedAverage: this.calculateMedian(comparableAverages),
+      median: this.calculateMedian(comparableAverages),
+      trend: this.determineOverallTrend(includedComparables.map((c) => c.multiYearAnalysis)),
+      volatility: this.calculateCoV(comparableAverages),
+      yearOnYearData: [],
+      exceptionalYearsExcluded: [],
+      adjustedAverage: this.calculateMedian(comparableAverages),
+      cyclicalAdjustment: 0,
+      methodology: "Multi-year weighted average with exceptional year exclusion",
+    };
+
+    // Compare trends
+    const trendComparison = this.compareTrends(
+      testedPartyMultiYearAnalysis,
+      multiYearAnalysis
+    );
+
+    // Recalculate range based on multi-year adjusted values
+    const adjustedValues = includedComparables
+      .map((c) => c.multiYearAnalysis.adjustedAverage)
+      .sort((a, b) => a - b);
+
+    const enhancedResult: EnhancedBenchmarkingResult = {
+      ...baseResult,
+      multiYearAnalysis,
+      testedPartyMultiYearAnalysis,
+      comparableMultiYearData,
+      trendComparison,
+    };
+
+    // Update range with multi-year adjusted values
+    if (adjustedValues.length > 0) {
+      enhancedResult.minimum = adjustedValues[0];
+      enhancedResult.maximum = adjustedValues[adjustedValues.length - 1];
+      enhancedResult.arithmeticMean =
+        adjustedValues.reduce((sum, v) => sum + v, 0) / adjustedValues.length;
+      enhancedResult.median = this.calculateMedian(adjustedValues);
+
+      const n = adjustedValues.length;
+      if (n >= 4) {
+        enhancedResult.lowerQuartile = adjustedValues[Math.floor(n * 0.25)];
+        enhancedResult.upperQuartile = adjustedValues[Math.floor(n * 0.75)];
+      } else {
+        enhancedResult.lowerQuartile = enhancedResult.minimum;
+        enhancedResult.upperQuartile = enhancedResult.maximum;
+      }
+
+      // Recheck tested party against adjusted range
+      const testedValue = testedPartyMultiYearAnalysis.adjustedAverage;
+      enhancedResult.testedPartyInRange =
+        testedValue >= enhancedResult.lowerQuartile &&
+        testedValue <= enhancedResult.upperQuartile;
+      enhancedResult.adjustmentRequired = !enhancedResult.testedPartyInRange;
+
+      if (enhancedResult.adjustmentRequired) {
+        if (testedValue < enhancedResult.lowerQuartile) {
+          enhancedResult.adjustmentDirection = "increase";
+          enhancedResult.adjustmentAmount = enhancedResult.median - testedValue;
+        } else {
+          enhancedResult.adjustmentDirection = "decrease";
+          enhancedResult.adjustmentAmount = testedValue - enhancedResult.median;
+        }
+      }
+    }
+
+    return enhancedResult;
+  }
+
+  // Helper methods
+
+  private calculateMedian(values: number[]): number {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+  }
+
+  private calculateStdDev(values: number[], mean: number): number {
+    if (values.length < 2) return 0;
+    const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
+    const avgSquaredDiff = squaredDiffs.reduce((sum, v) => sum + v, 0) / values.length;
+    return Math.sqrt(avgSquaredDiff);
+  }
+
+  private calculateCoV(values: number[]): number {
+    if (values.length === 0) return 0;
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    if (mean === 0) return 0;
+    const stdDev = this.calculateStdDev(values, mean);
+    return (stdDev / Math.abs(mean)) * 100;
+  }
+
+  private calculateRevenueWeightedAverage(values: number[], revenues: number[]): number {
+    if (values.length === 0) return 0;
+    const totalRevenue = revenues.reduce((sum, r) => sum + r, 0);
+    if (totalRevenue === 0) return values.reduce((sum, v) => sum + v, 0) / values.length;
+
+    const weightedSum = values.reduce((sum, v, i) => sum + v * revenues[i], 0);
+    return weightedSum / totalRevenue;
+  }
+
+  private calculateRecencyWeightedAverage(values: number[]): number {
+    if (values.length === 0) return 0;
+    // More recent years get higher weights (1, 2, 3 for 3 years)
+    const weights = values.map((_, i) => i + 1);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const weightedSum = values.reduce((sum, v, i) => sum + v * weights[i], 0);
+    return weightedSum / totalWeight;
+  }
+
+  private determineTrend(
+    yearData: YearOnYearTrend[]
+  ): "increasing" | "decreasing" | "stable" | "volatile" {
+    if (yearData.length < 2) return "stable";
+
+    const growthRates = yearData
+      .filter((y) => y.growthRate !== null)
+      .map((y) => y.growthRate as number);
+
+    if (growthRates.length === 0) return "stable";
+
+    const avgGrowth = growthRates.reduce((sum, g) => sum + g, 0) / growthRates.length;
+    const volatility = this.calculateStdDev(growthRates, avgGrowth);
+
+    // High volatility
+    if (volatility > 30) return "volatile";
+
+    // Determine direction
+    if (avgGrowth > 5) return "increasing";
+    if (avgGrowth < -5) return "decreasing";
+    return "stable";
+  }
+
+  private determineOverallTrend(
+    analyses: MultiYearAnalysisResult[]
+  ): "increasing" | "decreasing" | "stable" | "volatile" {
+    const trends = analyses.map((a) => a.trend);
+    const trendCounts = {
+      increasing: trends.filter((t) => t === "increasing").length,
+      decreasing: trends.filter((t) => t === "decreasing").length,
+      stable: trends.filter((t) => t === "stable").length,
+      volatile: trends.filter((t) => t === "volatile").length,
+    };
+
+    const maxCount = Math.max(...Object.values(trendCounts));
+    for (const [trend, count] of Object.entries(trendCounts)) {
+      if (count === maxCount) {
+        return trend as "increasing" | "decreasing" | "stable" | "volatile";
+      }
+    }
+    return "stable";
+  }
+
+  private calculateCyclicalAdjustment(
+    yearData: YearOnYearTrend[],
+    industryGrowthRate: number
+  ): number {
+    if (yearData.length < 2) return 0;
+
+    const actualGrowthRates = yearData
+      .filter((y) => y.growthRate !== null)
+      .map((y) => y.growthRate as number);
+
+    if (actualGrowthRates.length === 0) return 0;
+
+    const avgActualGrowth = actualGrowthRates.reduce((sum, g) => sum + g, 0) /
+      actualGrowthRates.length;
+
+    // Adjust for deviation from expected industry growth
+    const expectedGrowth = industryGrowthRate * 100;
+    return (expectedGrowth - avgActualGrowth) * 0.1; // 10% of deviation
+  }
+
+  private compareTrends(
+    testedParty: MultiYearAnalysisResult,
+    comparables: MultiYearAnalysisResult
+  ): TrendComparison {
+    const trendAlignment = testedParty.trend === comparables.trend;
+
+    let narrative = "";
+    if (trendAlignment) {
+      narrative = `Both the tested party and comparables show a ${testedParty.trend} trend, ` +
+        "indicating consistent market conditions.";
+    } else {
+      narrative = `The tested party shows a ${testedParty.trend} trend while comparables ` +
+        `show a ${comparables.trend} trend. This divergence may warrant additional analysis ` +
+        "to understand the underlying factors.";
+    }
+
+    return {
+      testedPartyTrend: testedParty.trend,
+      comparablesTrend: comparables.trend,
+      trendAlignment,
+      trendAnalysisNarrative: narrative,
+    };
+  }
+
+  private generateMethodologyNarrative(): string {
+    const parts: string[] = [];
+
+    parts.push(`Multi-year analysis using ${this.config.yearsToAnalyze}-year data.`);
+    parts.push(`Weighting method: ${this.config.weightingMethod.replace("_", " ")}.`);
+
+    if (this.config.excludeExceptionalYears) {
+      parts.push(
+        `Exceptional years (>${this.config.exceptionalYearThreshold} standard deviations) excluded.`
+      );
+    }
+
+    if (this.config.cyclicalAdjustment) {
+      parts.push(
+        `Cyclical adjustment applied based on industry growth rate of ` +
+          `${((this.config.industryGrowthRate || 0) * 100).toFixed(1)}%.`
+      );
+    }
+
+    return parts.join(" ");
+  }
+
+  private getEmptyResult(): MultiYearAnalysisResult {
+    return {
+      simpleAverage: 0,
+      weightedAverage: 0,
+      median: 0,
+      trend: "stable",
+      volatility: 0,
+      yearOnYearData: [],
+      exceptionalYearsExcluded: [],
+      adjustedAverage: 0,
+      cyclicalAdjustment: 0,
+      methodology: "Insufficient data for multi-year analysis",
+    };
+  }
+}
+
 // Export for convenience
 export const createBenchmarkingEngine = () => new BenchmarkingEngine();
 export const createComparableSearchEngine = () => new ComparableSearchEngine();
+export const createMultiYearTestingEngine = (config?: Partial<MultiYearTestingConfig>) =>
+  new MultiYearTestingEngine(config);

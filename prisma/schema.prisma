@@ -224,3 +224,1381 @@ enum DocStatus {
   APPROVED
   FILED
 }
+
+// ============================================================
+// ENTERPRISE TABLES - 55 TABLES ACROSS 11 DOMAINS
+// ============================================================
+
+// ============== DOMAIN 1: AUDIT & COMPLIANCE ==============
+
+model ImmutableAuditLog {
+  id            String   @id @default(cuid())
+  firmId        String
+  userId        String?
+  action        String   // CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, LOGOUT
+  entityType    String   // Client, Engagement, Document, User, etc.
+  entityId      String?
+  oldValues     Json?    // Previous state
+  newValues     Json?    // New state
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?    // Additional context
+  previousHash  String?  // Hash of previous log entry
+  currentHash   String   // Hash of this entry for chain integrity
+  createdAt     DateTime @default(now())
+
+  @@index([firmId, entityType])
+  @@index([firmId, createdAt])
+  @@index([userId])
+}
+
+model DataClassification {
+  id              String   @id @default(cuid())
+  firmId          String
+  entityType      String   // Client, User, Document
+  fieldName       String   // The field being classified
+  classification  String   // PII, SENSITIVE, FINANCIAL, PUBLIC
+  retentionDays   Int?     // How long to retain
+  encryptionLevel String?  // STANDARD, HIGH, HIGHEST
+  maskingPattern  String?  // Pattern for displaying masked data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([firmId, entityType, fieldName])
+}
+
+model AccessReview {
+  id           String             @id @default(cuid())
+  firmId       String
+  name         String             // "Q1 2024 Access Review"
+  description  String?
+  reviewerIds  Json               // Array of reviewer user IDs
+  scope        String             // ALL_USERS, SPECIFIC_ROLES, SPECIFIC_USERS
+  scopeConfig  Json?              // Configuration for scope
+  status       AccessReviewStatus @default(PENDING)
+  startDate    DateTime
+  dueDate      DateTime
+  completedAt  DateTime?
+  items        AccessReviewItem[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model AccessReviewItem {
+  id             String       @id @default(cuid())
+  accessReviewId String
+  accessReview   AccessReview @relation(fields: [accessReviewId], references: [id], onDelete: Cascade)
+  userId         String       // User being reviewed
+  currentRole    String
+  currentAccess  Json?        // Current permissions/access
+  decision       String?      // APPROVE, REVOKE, MODIFY
+  newRole        String?      // If MODIFY
+  newAccess      Json?        // If MODIFY
+  reviewerId     String?      // Who made the decision
+  reviewedAt     DateTime?
+  justification  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([accessReviewId, userId])
+}
+
+model SecurityIncident {
+  id               String               @id @default(cuid())
+  firmId           String
+  title            String
+  description      String
+  severity         IncidentSeverity     @default(MEDIUM)
+  status           IncidentStatus       @default(OPEN)
+  category         String               // DATA_BREACH, UNAUTHORIZED_ACCESS, PHISHING, etc.
+  affectedUsers    Json?                // Array of affected user IDs
+  affectedEntities Json?                // Array of affected entity IDs
+  detectedAt       DateTime
+  reportedById     String
+  containedAt      DateTime?
+  resolvedAt       DateTime?
+  rootCause        String?
+  containmentSteps Json?                // Array of steps taken
+  remediationSteps Json?
+  lessonsLearned   String?
+  externalNotified Boolean              @default(false) // CERT-In, DPDP Board
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model DataDeletionRequest {
+  id                String                    @id @default(cuid())
+  firmId            String
+  requestType       DataDeletionType          @default(ERASURE)
+  subjectEmail      String                    // Data subject's email
+  subjectName       String?
+  scope             Json                      // Which data to delete
+  status            DataDeletionStatus        @default(PENDING_VERIFICATION)
+  verificationToken String?                   @unique
+  verifiedAt        DateTime?
+  processingStarted DateTime?
+  completedAt       DateTime?
+  deletionLog       Json?                     // Log of what was deleted
+  exportPath        String?                   // For data portability exports
+  rejectionReason   String?
+  requestedAt       DateTime                  @default(now())
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([firmId, status])
+  @@index([subjectEmail])
+}
+
+// ============== DOMAIN 2: ANALYTICS & KPIs ==============
+
+model CustomReport {
+  id           String           @id @default(cuid())
+  firmId       String
+  createdById  String
+  name         String
+  description  String?
+  reportType   String           // TABLE, CHART, PIVOT
+  dataSource   String           // clients, engagements, documents, etc.
+  columns      Json             // Column configuration
+  filters      Json?            // Filter configuration
+  sorting      Json?            // Sort configuration
+  chartConfig  Json?            // Chart-specific configuration
+  isPublic     Boolean          @default(false)
+  schedules    ReportSchedule[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([firmId, createdById])
+}
+
+model ReportSchedule {
+  id           String       @id @default(cuid())
+  reportId     String
+  report       CustomReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  frequency    String       // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  dayOfWeek    Int?         // 0-6 for weekly
+  dayOfMonth   Int?         // 1-31 for monthly
+  time         String       // HH:MM
+  timezone     String       @default("Asia/Kolkata")
+  recipients   Json         // Array of email addresses
+  format       String       @default("PDF") // PDF, EXCEL, CSV
+  isActive     Boolean      @default(true)
+  lastRunAt    DateTime?
+  nextRunAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model CustomDashboard {
+  id          String   @id @default(cuid())
+  firmId      String
+  userId      String
+  name        String
+  description String?
+  layout      Json     // Grid layout configuration
+  widgets     Json     // Widget configurations
+  isDefault   Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  refreshRate Int?     // Refresh interval in seconds
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([firmId, userId])
+}
+
+model KpiDefinition {
+  id               String     @id @default(cuid())
+  firmId           String
+  name             String
+  description      String?
+  category         String     // COMPLIANCE, FINANCIAL, OPERATIONAL, CUSTOMER
+  calculationQuery String     // SQL or custom query
+  unit             String     // PERCENTAGE, CURRENCY, NUMBER, DAYS
+  direction        String     @default("HIGHER_IS_BETTER") // HIGHER_IS_BETTER, LOWER_IS_BETTER
+  warningThreshold Decimal?   @db.Decimal(18, 4)
+  criticalThreshold Decimal?  @db.Decimal(18, 4)
+  targetValue      Decimal?   @db.Decimal(18, 4)
+  values           KpiValue[]
+  alerts           KpiAlert[]
+  isActive         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@unique([firmId, name])
+}
+
+model KpiValue {
+  id        String        @id @default(cuid())
+  kpiId     String
+  kpi       KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  value     Decimal       @db.Decimal(18, 4)
+  period    String        // 2024-01, 2024-Q1, 2024
+  metadata  Json?         // Additional context
+  createdAt DateTime      @default(now())
+
+  @@unique([kpiId, period])
+  @@index([kpiId, createdAt])
+}
+
+model KpiAlert {
+  id             String        @id @default(cuid())
+  kpiId          String
+  kpi            KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  alertType      String        // WARNING, CRITICAL
+  triggeredValue Decimal       @db.Decimal(18, 4)
+  threshold      Decimal       @db.Decimal(18, 4)
+  message        String
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  createdAt      DateTime      @default(now())
+
+  @@index([kpiId, createdAt])
+}
+
+// ============== DOMAIN 3: CUSTOMER SUCCESS ==============
+
+model CustomerHealthScore {
+  id                  String   @id @default(cuid())
+  firmId              String
+  clientId            String
+  overallScore        Int      // 0-100
+  engagementScore     Int      // 0-100
+  complianceScore     Int      // 0-100
+  paymentScore        Int      // 0-100
+  supportScore        Int      // 0-100
+  usageScore          Int      // 0-100
+  riskLevel           String   // LOW, MEDIUM, HIGH, CRITICAL
+  trend               String   // IMPROVING, STABLE, DECLINING
+  factors             Json?    // Detailed factor breakdown
+  recommendations     Json?    // AI recommendations
+  lastCalculatedAt    DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([firmId, clientId])
+  @@index([firmId, riskLevel])
+}
+
+model CustomerEngagementEvent {
+  id        String   @id @default(cuid())
+  firmId    String
+  clientId  String
+  eventType String   // LOGIN, DOCUMENT_VIEW, FORM_SUBMIT, SUPPORT_TICKET, etc.
+  eventData Json?    // Event-specific data
+  userId    String?  // If associated with a specific user
+  source    String?  // WEB, MOBILE, API
+  createdAt DateTime @default(now())
+
+  @@index([firmId, clientId])
+  @@index([firmId, eventType])
+  @@index([createdAt])
+}
+
+model NpsSurvey {
+  id          String    @id @default(cuid())
+  firmId      String
+  clientId    String
+  touchpoint  String    // POST_ENGAGEMENT, QUARTERLY, ANNUAL
+  score       Int?      // 0-10
+  feedback    String?
+  sentiment   String?   // PROMOTER, PASSIVE, DETRACTOR
+  sentAt      DateTime  @default(now())
+  respondedAt DateTime?
+  followUpAt  DateTime?
+  followUpBy  String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([firmId, clientId])
+  @@index([firmId, sentiment])
+}
+
+model SuccessPlaybook {
+  id                String              @id @default(cuid())
+  firmId            String
+  name              String
+  description       String?
+  triggerType       String              // MANUAL, SCORE_CHANGE, EVENT, SCHEDULED
+  triggerConditions Json?               // Conditions that trigger this playbook
+  stages            Json                // Array of stages with tasks
+  isActive          Boolean             @default(true)
+  executions        PlaybookExecution[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([firmId])
+}
+
+model PlaybookExecution {
+  id            String          @id @default(cuid())
+  playbookId    String
+  playbook      SuccessPlaybook @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+  clientId      String
+  currentStage  Int             @default(0)
+  status        String          @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, PAUSED, CANCELLED
+  stageProgress Json?           // Progress within each stage
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+  pausedAt      DateTime?
+  assignedToId  String?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([playbookId, status])
+  @@index([clientId])
+}
+
+model RenewalOpportunity {
+  id                String   @id @default(cuid())
+  firmId            String
+  clientId          String
+  contractType      String   // ANNUAL, MULTI_YEAR, PROJECT_BASED
+  currentValue      Decimal  @db.Decimal(18, 2)
+  proposedValue     Decimal? @db.Decimal(18, 2)
+  renewalDate       DateTime
+  status            String   @default("UPCOMING") // UPCOMING, IN_PROGRESS, RENEWED, CHURNED, AT_RISK
+  probability       Int?     // 0-100
+  riskFactors       Json?    // Factors affecting renewal
+  competitorThreats Json?    // Known competitor activity
+  ownerId           String?  // Sales/CSM owner
+  lastContactAt     DateTime?
+  nextActionAt      DateTime?
+  nextAction        String?
+  notes             String?
+  wonLostReason     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([firmId, status])
+  @@index([firmId, renewalDate])
+}
+
+// ============== DOMAIN 4: DOCUMENT MANAGEMENT V2 ==============
+
+model DocumentTemplate {
+  id            String                  @id @default(cuid())
+  firmId        String
+  name          String
+  category      String                  // ENGAGEMENT_LETTER, FORM_3CEB, INVOICE, etc.
+  description   String?
+  templateType  String                  @default("HTML") // HTML, DOCX, PDF
+  content       String                  @db.Text // Template content with placeholders
+  variables     Json                    // Variable definitions
+  version       Int                     @default(1)
+  isActive      Boolean                 @default(true)
+  jobs          DocumentGenerationJob[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([firmId, category])
+}
+
+model DocumentGenerationJob {
+  id             String            @id @default(cuid())
+  templateId     String
+  template       DocumentTemplate  @relation(fields: [templateId], references: [id])
+  firmId         String
+  entityType     String            // Client, Engagement
+  entityId       String
+  variablesData  Json              // Actual values for variables
+  status         String            @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  outputFormat   String            @default("PDF")
+  outputPath     String?
+  outputDocId    String?           // Reference to generated Document
+  errorMessage   String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([firmId, status])
+}
+
+model DocumentAnnotation {
+  id             String    @id @default(cuid())
+  documentId     String
+  userId         String
+  annotationType String    // HIGHLIGHT, COMMENT, STAMP, DRAWING
+  content        String?   // Text content of annotation
+  position       Json      // {page, x, y, width, height}
+  color          String?
+  isResolved     Boolean   @default(false)
+  resolvedById   String?
+  resolvedAt     DateTime?
+  parentId       String?   // For threaded comments
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([documentId])
+  @@index([documentId, isResolved])
+}
+
+model DocumentShare {
+  id          String    @id @default(cuid())
+  documentId  String
+  shareType   String    // LINK, EMAIL, USER
+  sharedWith  String?   // Email or user ID
+  accessLevel String    @default("VIEW") // VIEW, COMMENT, EDIT
+  shareToken  String    @unique @default(cuid())
+  password    String?   // Optional password protection
+  expiresAt   DateTime?
+  maxAccesses Int?
+  accessCount Int       @default(0)
+  isRevoked   Boolean   @default(false)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([documentId])
+  @@index([shareToken])
+}
+
+model DocumentSearchIndex {
+  id              String   @id @default(cuid())
+  documentId      String   @unique
+  firmId          String
+  fullText        String   @db.Text // Extracted text content
+  entities        Json?    // Extracted entities (PAN, dates, amounts, etc.)
+  keywords        Json?    // Extracted keywords
+  ocrCompleted    Boolean  @default(false)
+  lastIndexedAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([firmId])
+}
+
+model DocumentRetentionPolicy {
+  id             String   @id @default(cuid())
+  firmId         String
+  name           String
+  description    String?
+  documentTypes  Json     // Array of DocumentType
+  retentionDays  Int
+  action         String   @default("DELETE") // DELETE, ARCHIVE
+  archivePath    String?
+  isActive       Boolean  @default(true)
+  lastExecutedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([firmId])
+}
+
+// ============== DOMAIN 5: PROJECT MANAGEMENT ==============
+
+model Project {
+  id            String              @id @default(cuid())
+  firmId        String
+  clientId      String?
+  projectCode   String
+  name          String
+  description   String?
+  status        String              @default("PLANNING") // PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
+  priority      Priority            @default(MEDIUM)
+  projectType   String?             // ENGAGEMENT, INTERNAL, RETAINER
+  budget        Decimal?            @db.Decimal(18, 2)
+  budgetUsed    Decimal             @default(0) @db.Decimal(18, 2)
+  startDate     DateTime?
+  targetEndDate DateTime?
+  actualEndDate DateTime?
+  managerId     String?
+  milestones    ProjectMilestone[]
+  tasks         ProjectTask[]
+  timeEntries   TimeEntry[]
+  allocations   ResourceAllocation[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([firmId, projectCode])
+  @@index([firmId, status])
+  @@index([firmId, clientId])
+}
+
+model ProjectMilestone {
+  id             String        @id @default(cuid())
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  targetDate     DateTime
+  completedDate  DateTime?
+  status         String        @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  deliverables   Json?         // Array of deliverables
+  tasks          ProjectTask[]
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([projectId])
+}
+
+model ProjectTask {
+  id              String            @id @default(cuid())
+  projectId       String
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestoneId     String?
+  milestone       ProjectMilestone? @relation(fields: [milestoneId], references: [id])
+  parentTaskId    String?           // For subtasks
+  title           String
+  description     String?
+  status          String            @default("TODO") // TODO, IN_PROGRESS, REVIEW, BLOCKED, DONE
+  priority        Priority          @default(MEDIUM)
+  assigneeId      String?
+  estimatedHours  Decimal?          @db.Decimal(8, 2)
+  actualHours     Decimal           @default(0) @db.Decimal(8, 2)
+  startDate       DateTime?
+  dueDate         DateTime?
+  completedAt     DateTime?
+  dependencies    Json?             // Array of dependent task IDs
+  tags            Json?             // Array of tags
+  timeEntries     TimeEntry[]
+  kanbanColumnId  String?
+  sortOrder       Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model TimeEntry {
+  id          String       @id @default(cuid())
+  firmId      String
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        ProjectTask? @relation(fields: [taskId], references: [id])
+  userId      String
+  date        DateTime
+  hours       Decimal      @db.Decimal(5, 2)
+  description String?
+  billable    Boolean      @default(true)
+  billRate    Decimal?     @db.Decimal(10, 2)
+  status      String       @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED, INVOICED
+  approvedById String?
+  approvedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([firmId, userId])
+  @@index([projectId])
+  @@index([firmId, date])
+}
+
+model ResourceAllocation {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId         String
+  role           String   // Role on this project
+  allocationPct  Int      // 0-100
+  startDate      DateTime
+  endDate        DateTime?
+  hourlyRate     Decimal? @db.Decimal(10, 2)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model KanbanBoard {
+  id          String   @id @default(cuid())
+  firmId      String
+  projectId   String?  // If null, it's a general board
+  name        String
+  description String?
+  columns     Json     // Array of column configurations
+  settings    Json?    // WIP limits, etc.
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([projectId])
+}
+
+// ============== DOMAIN 6: FINANCIAL/ACCOUNTING ==============
+
+model ChartOfAccount {
+  id            String              @id @default(cuid())
+  firmId        String
+  accountCode   String
+  name          String
+  accountType   AccountType
+  parentId      String?             // For hierarchical structure
+  description   String?
+  isActive      Boolean             @default(true)
+  isSystemAccount Boolean           @default(false) // Protected accounts
+  normalBalance String              @default("DEBIT") // DEBIT or CREDIT
+  journalLines  JournalEntryLine[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([firmId, accountCode])
+  @@index([firmId, accountType])
+}
+
+model JournalEntry {
+  id            String             @id @default(cuid())
+  firmId        String
+  entryNumber   String
+  entryDate     DateTime
+  description   String
+  reference     String?            // Invoice/Bill/Check number
+  entryType     String             @default("STANDARD") // STANDARD, ADJUSTING, CLOSING, REVERSING
+  status        JournalStatus      @default(DRAFT)
+  totalDebit    Decimal            @db.Decimal(18, 2)
+  totalCredit   Decimal            @db.Decimal(18, 2)
+  lines         JournalEntryLine[]
+  postedById    String?
+  postedAt      DateTime?
+  reversedById  String?
+  reversedAt    DateTime?
+  reversalOfId  String?            // If this is a reversal entry
+  createdById   String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([firmId, entryNumber])
+  @@index([firmId, entryDate])
+  @@index([firmId, status])
+}
+
+model JournalEntryLine {
+  id           String         @id @default(cuid())
+  journalId    String
+  journal      JournalEntry   @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId    String
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
+  description  String?
+  debitAmount  Decimal        @default(0) @db.Decimal(18, 2)
+  creditAmount Decimal        @default(0) @db.Decimal(18, 2)
+  taxCode      String?
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+
+  @@index([journalId])
+  @@index([accountId])
+}
+
+model ExchangeRate {
+  id           String   @id @default(cuid())
+  firmId       String
+  fromCurrency String
+  toCurrency   String
+  rate         Decimal  @db.Decimal(18, 8)
+  effectiveDate DateTime
+  source       String?  // RBI, MANUAL
+  createdAt    DateTime @default(now())
+
+  @@unique([firmId, fromCurrency, toCurrency, effectiveDate])
+  @@index([firmId, effectiveDate])
+}
+
+model TaxConfiguration {
+  id           String   @id @default(cuid())
+  firmId       String
+  taxType      String   // GST, TDS, TCS
+  code         String   // GST18, TDS194C, etc.
+  name         String
+  rate         Decimal  @db.Decimal(8, 4)
+  accountId    String?  // Linked account in COA
+  isActive     Boolean  @default(true)
+  effectiveFrom DateTime
+  effectiveTo  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([firmId, code])
+}
+
+model TaxTransaction {
+  id            String   @id @default(cuid())
+  firmId        String
+  taxConfigId   String
+  transactionType String // INPUT, OUTPUT, PAYABLE, RECEIVABLE
+  baseAmount    Decimal  @db.Decimal(18, 2)
+  taxAmount     Decimal  @db.Decimal(18, 2)
+  referenceType String?  // Invoice, Bill, Payment
+  referenceId   String?
+  period        String   // 2024-01 for monthly
+  status        String   @default("PENDING") // PENDING, FILED, PAID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([firmId, period])
+  @@index([firmId, taxConfigId])
+}
+
+model BankAccount {
+  id            String            @id @default(cuid())
+  firmId        String
+  accountName   String
+  accountNumber String
+  bankName      String
+  ifscCode      String?
+  swiftCode     String?
+  currency      String            @default("INR")
+  accountType   String            @default("CURRENT") // CURRENT, SAVINGS, OD
+  linkedAccountId String?         // Link to ChartOfAccount
+  openingBalance Decimal          @default(0) @db.Decimal(18, 2)
+  currentBalance Decimal          @default(0) @db.Decimal(18, 2)
+  isActive      Boolean           @default(true)
+  transactions  BankTransaction[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([firmId, accountNumber])
+}
+
+model BankTransaction {
+  id                 String       @id @default(cuid())
+  bankAccountId      String
+  bankAccount        BankAccount  @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  transactionDate    DateTime
+  valueDate          DateTime?
+  description        String
+  reference          String?
+  debitAmount        Decimal      @default(0) @db.Decimal(18, 2)
+  creditAmount       Decimal      @default(0) @db.Decimal(18, 2)
+  balance            Decimal?     @db.Decimal(18, 2)
+  category           String?
+  isReconciled       Boolean      @default(false)
+  reconciledJournalId String?     // Linked journal entry
+  reconciledAt       DateTime?
+  reconciledById     String?
+  importBatchId      String?      // For grouping imports
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([bankAccountId])
+  @@index([bankAccountId, isReconciled])
+  @@index([transactionDate])
+}
+
+// ============== DOMAIN 7: MULTI-TENANCY ==============
+
+// Note: Firm model serves as Tenant - adding enhancements
+model TenantInvitation {
+  id          String   @id @default(cuid())
+  firmId      String
+  email       String
+  role        Role     @default(ASSOCIATE)
+  invitedById String
+  token       String   @unique @default(cuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([firmId, email])
+  @@index([token])
+}
+
+// ============== DOMAIN 8: ADVANCED RBAC ==============
+
+model PermissionGroup {
+  id          String   @id @default(cuid())
+  firmId      String
+  name        String
+  description String?
+  permissions Json     // Array of permission strings
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([firmId, name])
+}
+
+model UserPermissionOverride {
+  id           String   @id @default(cuid())
+  firmId       String
+  userId       String
+  permission   String
+  granted      Boolean  @default(true) // true = grant, false = deny
+  grantedById  String
+  expiresAt    DateTime?
+  reason       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([firmId, userId, permission])
+}
+
+model FieldSecurityRule {
+  id           String   @id @default(cuid())
+  firmId       String
+  entityType   String   // Client, Engagement, User
+  fieldName    String
+  roles        Json     // Array of roles that can access
+  accessType   String   // READ, WRITE, BOTH
+  maskingType  String?  // NONE, PARTIAL, FULL
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([firmId, entityType, fieldName])
+}
+
+model AccessRestriction {
+  id                String    @id @default(cuid())
+  firmId            String
+  userId            String?   // If null, applies to all users in firm
+  restrictionType   String    // IP, GEO, TIME, DEVICE
+  config            Json      // Configuration for the restriction
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([firmId, userId])
+}
+
+model SessionPolicy {
+  id                  String   @id @default(cuid())
+  firmId              String
+  name                String
+  maxSessionDuration  Int?     // In minutes
+  idleTimeout         Int?     // In minutes
+  maxConcurrentSessions Int?
+  requireMfa          Boolean  @default(false)
+  mfaMethods          Json?    // Array of allowed MFA methods
+  ipWhitelist         Json?    // Array of allowed IPs
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([firmId])
+}
+
+// ============== DOMAIN 9: WEBHOOKS & APIs ==============
+
+model WebhookEndpoint {
+  id          String            @id @default(cuid())
+  firmId      String
+  url         String
+  description String?
+  events      Json              // Array of event types to subscribe
+  secret      String            // For signature verification
+  isActive    Boolean           @default(true)
+  retryPolicy Json?             // Retry configuration
+  deliveries  WebhookDelivery[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([firmId])
+}
+
+model WebhookDelivery {
+  id           String           @id @default(cuid())
+  endpointId   String
+  endpoint     WebhookEndpoint  @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventType    String
+  payload      Json
+  status       String           @default("PENDING") // PENDING, SUCCESS, FAILED
+  statusCode   Int?
+  response     String?
+  attempts     Int              @default(0)
+  lastAttemptAt DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([endpointId])
+  @@index([status])
+}
+
+model ApiKey {
+  id          String         @id @default(cuid())
+  firmId      String
+  name        String
+  keyHash     String         @unique // Store hashed key
+  keyPrefix   String         // First 8 chars for identification
+  permissions Json           // Array of allowed permissions
+  rateLimit   Int            @default(1000) // Requests per hour
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  isActive    Boolean        @default(true)
+  usageLogs   ApiUsageLog[]
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([firmId])
+  @@index([keyPrefix])
+}
+
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  apiKeyId     String
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Int      // In milliseconds
+  requestSize  Int?
+  responseSize Int?
+  ipAddress    String?
+  userAgent    String?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([apiKeyId])
+  @@index([createdAt])
+}
+
+model IntegrationTemplate {
+  id           String              @id @default(cuid())
+  name         String
+  provider     String              // TALLY, ZOHO, QUICKBOOKS, etc.
+  category     String              // ACCOUNTING, CRM, COMMUNICATION
+  description  String?
+  logoUrl      String?
+  configSchema Json                // JSON Schema for configuration
+  authType     String              // OAUTH2, API_KEY, BASIC
+  endpoints    Json                // API endpoint configurations
+  isActive     Boolean             @default(true)
+  integrations TenantIntegration[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@unique([provider])
+}
+
+model TenantIntegration {
+  id            String               @id @default(cuid())
+  firmId        String
+  templateId    String
+  template      IntegrationTemplate  @relation(fields: [templateId], references: [id])
+  config        Json                 // Tenant-specific configuration
+  credentials   Json?                // Encrypted credentials
+  status        String               @default("PENDING") // PENDING, ACTIVE, ERROR, DISABLED
+  lastSyncAt    DateTime?
+  lastSyncStatus String?
+  syncErrors    Json?
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([firmId, templateId])
+}
+
+// ============== DOMAIN 10: NOTIFICATIONS ==============
+
+model NotificationPreference {
+  id          String   @id @default(cuid())
+  firmId      String
+  userId      String
+  channel     String   // EMAIL, SMS, PUSH, IN_APP
+  eventType   String   // DEADLINE_REMINDER, DOCUMENT_SHARED, etc.
+  isEnabled   Boolean  @default(true)
+  frequency   String?  // IMMEDIATE, DAILY_DIGEST, WEEKLY_DIGEST
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, channel, eventType])
+}
+
+model NotificationQueue {
+  id          String    @id @default(cuid())
+  firmId      String
+  userId      String
+  type        String    // The notification type
+  channel     String    // EMAIL, SMS, PUSH
+  priority    String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  subject     String?
+  content     Json      // Notification content
+  metadata    Json?     // Additional data
+  status      String    @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  errorMessage String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([firmId, status])
+  @@index([scheduledAt])
+}
+
+model CommunicationThread {
+  id           String          @id @default(cuid())
+  firmId       String
+  entityType   String          // Client, Engagement, Document
+  entityId     String
+  subject      String
+  participants Json            // Array of user IDs
+  status       String          @default("OPEN") // OPEN, CLOSED, ARCHIVED
+  messages     ThreadMessage[]
+  createdById  String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([firmId, entityType, entityId])
+}
+
+model ThreadMessage {
+  id           String              @id @default(cuid())
+  threadId     String
+  thread       CommunicationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId     String
+  content      String              @db.Text
+  contentType  String              @default("TEXT") // TEXT, HTML
+  isInternal   Boolean             @default(false) // Internal note vs client-visible
+  attachments  Json?               // Array of attachment references
+  readBy       Json?               // Array of user IDs who read
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([threadId])
+}
+
+// ============== DOMAIN 11: SALES & LEAD MANAGEMENT ==============
+
+model Lead {
+  id               String       @id @default(cuid())
+  firmId           String
+
+  // Lead Information
+  companyName      String
+  contactPerson    String
+  contactEmail     String
+  contactPhone     String?
+  industry         String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  country          String?      @default("India")
+
+  // Lead Source & Status
+  source           LeadSource   @default(REFERRAL)
+  status           LeadStatus   @default(NEW)
+  priority         Priority     @default(MEDIUM)
+
+  // Sales Information
+  estimatedValue   Decimal?     @db.Decimal(18, 2)
+  probability      Int?         // 0-100
+  expectedCloseDate DateTime?
+  assignedToId     String?
+
+  // Service Interest
+  servicesInterested Json?      // Array of services they're interested in
+  requirements       String?    @db.Text
+
+  // Conversion Tracking
+  convertedToClientId String?   // When converted
+  convertedAt         DateTime?
+  lostReason          String?   // If lost
+  lostAt              DateTime?
+
+  // Activities
+  lastContactAt    DateTime?
+  nextFollowUpAt   DateTime?
+  notes            String?      @db.Text
+  interactions     LeadInteraction[]
+
+  // Metadata
+  createdById      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([firmId, status])
+  @@index([firmId, assignedToId])
+  @@index([firmId, source])
+  @@index([firmId, createdAt])
+}
+
+model LeadInteraction {
+  id          String           @id @default(cuid())
+  leadId      String
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        InteractionType
+  subject     String?
+  content     String           @db.Text
+  outcome     String?
+  nextAction  String?
+  scheduledAt DateTime?
+  completedAt DateTime?
+  createdById String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model UpsellOpportunity {
+  id               String       @id @default(cuid())
+  firmId           String
+  clientId         String
+
+  // Opportunity Details
+  title            String
+  description      String?
+  serviceType      String       // Type of service to upsell
+  estimatedValue   Decimal      @db.Decimal(18, 2)
+  probability      Int?         // 0-100
+
+  // Status
+  status           UpsellStatus @default(IDENTIFIED)
+  priority         Priority     @default(MEDIUM)
+
+  // Ownership
+  identifiedById   String?      // Who identified the opportunity
+  assignedToId     String?      // Sales owner
+
+  // Timeline
+  identifiedAt     DateTime     @default(now())
+  targetCloseDate  DateTime?
+  closedAt         DateTime?
+  wonLostReason    String?
+
+  // Notes
+  notes            String?      @db.Text
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([firmId, status])
+  @@index([firmId, clientId])
+  @@index([firmId, assignedToId])
+}
+
+model SalesFeedback {
+  id               String       @id @default(cuid())
+  firmId           String
+
+  // Reference
+  entityType       String       // Lead, Client, UpsellOpportunity
+  entityId         String
+
+  // Feedback
+  feedbackType     FeedbackType
+  rating           Int?         // 1-5
+  content          String       @db.Text
+  sentiment        String?      // POSITIVE, NEUTRAL, NEGATIVE
+
+  // Source
+  givenById        String?      // User who gave feedback (internal)
+  externalSource   String?      // External source name
+
+  // Follow-up
+  requiresFollowUp Boolean      @default(false)
+  followUpAssignedToId String?
+  followUpCompletedAt DateTime?
+  response         String?      @db.Text
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([firmId, entityType, entityId])
+  @@index([firmId, feedbackType])
+}
+
+// ============== DOMAIN 12: AI/ML INTELLIGENCE ==============
+
+model MlModel {
+  id           String   @id @default(cuid())
+  name         String
+  version      String
+  modelType    String   // LEAD_SCORING, CHURN_PREDICTION, DOCUMENT_EXTRACTION
+  description  String?
+  modelPath    String?  // Path to model file
+  config       Json?    // Model configuration
+  metrics      Json?    // Performance metrics
+  status       String   @default("TRAINING") // TRAINING, DEPLOYED, DEPRECATED
+  deployedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([name, version])
+}
+
+model LeadScore {
+  id              String   @id @default(cuid())
+  firmId          String
+  leadId          String   // Reference to potential client
+  score           Int      // 0-100
+  scoreFactors    Json     // Breakdown of scoring factors
+  conversionProb  Decimal? @db.Decimal(5, 4) // 0.0000 to 1.0000
+  segment         String?  // HOT, WARM, COLD
+  recommendedAction String?
+  lastCalculatedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([firmId, leadId])
+  @@index([firmId, segment])
+}
+
+model ClientChurnScore {
+  id              String   @id @default(cuid())
+  firmId          String
+  clientId        String
+  churnProbability Decimal @db.Decimal(5, 4) // 0.0000 to 1.0000
+  riskLevel       String   // LOW, MEDIUM, HIGH, CRITICAL
+  riskFactors     Json     // Factors contributing to churn risk
+  retentionActions Json?   // Recommended actions
+  predictedChurnDate DateTime?
+  lastCalculatedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([firmId, clientId])
+  @@index([firmId, riskLevel])
+}
+
+model AiRecommendation {
+  id              String    @id @default(cuid())
+  firmId          String
+  userId          String
+  recommendationType String // NEXT_BEST_ACTION, UPSELL, TASK_PRIORITY
+  entityType      String?   // Client, Engagement
+  entityId        String?
+  title           String
+  description     String
+  confidence      Decimal   @db.Decimal(5, 4)
+  actionUrl       String?   // Deep link to action
+  actionData      Json?     // Data needed for action
+  status          String    @default("ACTIVE") // ACTIVE, DISMISSED, ACTED
+  dismissedAt     DateTime?
+  actedAt         DateTime?
+  outcome         String?   // SUCCESS, FAILURE, PENDING
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([firmId, userId])
+  @@index([firmId, status])
+}
+
+model DocumentExtraction {
+  id              String   @id @default(cuid())
+  documentId      String   @unique
+  firmId          String
+  extractionType  String   // PAN, GST, FINANCIALS, FULL
+  rawText         String?  @db.Text
+  extractedData   Json     // Structured extracted data
+  confidence      Json?    // Confidence per field
+  status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  verifiedById    String?
+  verifiedAt      DateTime?
+  corrections     Json?    // Manual corrections made
+  modelVersion    String?
+  processingTime  Int?     // In milliseconds
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([firmId, status])
+}
+
+// ============== ADDITIONAL ENUMS ==============
+
+enum AccessReviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  CONTAINED
+  ERADICATED
+  RECOVERED
+  CLOSED
+}
+
+enum DataDeletionType {
+  ERASURE      // Right to be forgotten
+  PORTABILITY  // Data export
+  ACCESS       // Data access request
+}
+
+enum DataDeletionStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  POSTED
+  REVERSED
+}
+
+// Lead Management Enums
+enum LeadSource {
+  REFERRAL
+  WEBSITE
+  COLD_CALL
+  TRADE_SHOW
+  SOCIAL_MEDIA
+  ADVERTISEMENT
+  PARTNER
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum InteractionType {
+  CALL
+  EMAIL
+  MEETING
+  DEMO
+  PROPOSAL
+  FOLLOW_UP
+  NOTE
+}
+
+enum UpsellStatus {
+  IDENTIFIED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum FeedbackType {
+  SERVICE_FEEDBACK
+  PRODUCT_FEEDBACK
+  COMPLAINT
+  SUGGESTION
+  COMPLIMENT
+  NPS
+}

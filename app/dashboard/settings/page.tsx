@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +22,14 @@ import {
   Save,
   Upload,
   Check,
-  Mail,
   Clock,
   FileText,
+  Lock,
+  AlertTriangle,
 } from "lucide-react";
+import { usePermissions, PermissionAction } from "@/lib/hooks/use-permissions";
+import { LoadingState } from "@/components/ui/loading";
+import { useSession } from "next-auth/react";
 
 // Sample firm data
 const firmData = {
@@ -61,17 +65,48 @@ const planFeatures = {
   ],
 };
 
+interface TabConfig {
+  id: string;
+  label: string;
+  icon: typeof Building2;
+  requiresAdmin: boolean;
+}
+
+const allTabs: TabConfig[] = [
+  { id: "firm", label: "Firm Profile", icon: Building2, requiresAdmin: true },
+  { id: "profile", label: "My Profile", icon: User, requiresAdmin: false },
+  { id: "notifications", label: "Notifications", icon: Bell, requiresAdmin: false },
+  { id: "security", label: "Security", icon: Shield, requiresAdmin: false },
+  { id: "billing", label: "Billing", icon: CreditCard, requiresAdmin: true },
+];
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"firm" | "profile" | "notifications" | "security" | "billing">("firm");
+  const { data: session } = useSession();
+  const { can, isAdmin, isLoading, role } = usePermissions();
   const [firmForm, setFirmForm] = useState(firmData);
 
-  const tabs = [
-    { id: "firm", label: "Firm Profile", icon: Building2 },
-    { id: "profile", label: "My Profile", icon: User },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "security", label: "Security", icon: Shield },
-    { id: "billing", label: "Billing", icon: CreditCard },
-  ];
+  // Filter tabs based on permissions
+  const availableTabs = useMemo(() => {
+    return allTabs.filter((tab) => {
+      if (tab.requiresAdmin) {
+        return can("settings", PermissionAction.ADMIN);
+      }
+      return true;
+    });
+  }, [can]);
+
+  // Default to first available tab
+  const [activeTab, setActiveTab] = useState<string>("profile");
+
+  // Check if user can access current tab
+  const currentTabConfig = allTabs.find((t) => t.id === activeTab);
+  const canAccessCurrentTab = currentTabConfig
+    ? !currentTabConfig.requiresAdmin || can("settings", PermissionAction.ADMIN)
+    : false;
+
+  if (isLoading) {
+    return <LoadingState message="Loading settings..." />;
+  }
 
   return (
     <div className="space-y-6">
@@ -79,20 +114,20 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Settings</h1>
         <p className="text-[var(--text-secondary)]">
-          Manage your firm profile and preferences
+          Manage your profile and preferences
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Sidebar Navigation */}
         <div className="space-y-2">
-          {tabs.map((tab) => {
+          {availableTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
                   isActive
                     ? "bg-[var(--accent-glow)] text-[var(--accent)]"
@@ -101,14 +136,41 @@ export default function SettingsPage() {
               >
                 <Icon className="h-5 w-5" />
                 <span className="font-medium">{tab.label}</span>
+                {tab.requiresAdmin && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    Admin
+                  </Badge>
+                )}
               </button>
             );
           })}
+
+          {/* Show locked tabs for non-admins */}
+          {!isAdmin && (
+            <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+              <p className="px-4 text-xs text-[var(--text-muted)] mb-2">Restricted</p>
+              {allTabs
+                .filter((tab) => tab.requiresAdmin)
+                .map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <div
+                      key={tab.id}
+                      className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-[var(--text-muted)] opacity-50 cursor-not-allowed"
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{tab.label}</span>
+                      <Lock className="h-4 w-4 ml-auto" />
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
 
         {/* Content */}
         <div className="lg:col-span-3">
-          {activeTab === "firm" && (
+          {activeTab === "firm" && canAccessCurrentTab && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -257,7 +319,12 @@ export default function SettingsPage() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center gap-6">
                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--accent-glow)] text-2xl font-semibold text-[var(--accent)]">
-                      PS
+                      {session?.user?.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2) || "U"}
                     </div>
                     <div>
                       <Button variant="outline">
@@ -272,38 +339,28 @@ export default function SettingsPage() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" defaultValue="Priya" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" defaultValue="Sharma" />
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input id="fullName" defaultValue={session?.user?.name || ""} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" defaultValue="priya@kumarassociates.com" />
+                      <Input
+                        id="email"
+                        type="email"
+                        defaultValue={session?.user?.email || ""}
+                        disabled
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" defaultValue="9876543210" />
+                      <Input id="phone" placeholder="Enter phone number" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="membershipNo">ICAI Membership No</Label>
-                      <Input id="membershipNo" defaultValue="123456" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
-                      <Select defaultValue="partner">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="partner">Partner</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                          <SelectItem value="staff">Staff</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label>Role</Label>
+                      <Input value={role} disabled />
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Contact an administrator to change your role
+                      </p>
                     </div>
                   </div>
 
@@ -533,7 +590,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "billing" && (
+          {activeTab === "billing" && canAccessCurrentTab && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -628,6 +685,31 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {/* Access Denied for Admin-only tabs */}
+          {!canAccessCurrentTab && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-[var(--warning-bg)] p-4 mb-4">
+                  <AlertTriangle className="h-8 w-8 text-[var(--warning)]" />
+                </div>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Access Restricted
+                </h3>
+                <p className="mt-2 text-center text-[var(--text-secondary)] max-w-md">
+                  You don't have permission to access this section. Please contact your administrator
+                  if you believe you should have access.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setActiveTab("profile")}
+                >
+                  Go to My Profile
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

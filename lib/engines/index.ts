@@ -119,8 +119,10 @@ export {
 export {
   BenchmarkingEngine,
   ComparableSearchEngine,
+  MultiYearTestingEngine,
   createBenchmarkingEngine,
   createComparableSearchEngine,
+  createMultiYearTestingEngine,
   calculatePLIs,
   DatabaseSource,
   FunctionalProfile,
@@ -134,6 +136,12 @@ export {
   type ComparableCompany as BenchmarkingComparableCompany,
   type SearchCriteria,
   type BenchmarkingResult as BenchmarkingEngineResult,
+  type MultiYearTestingConfig,
+  type MultiYearAnalysisResult,
+  type EnhancedBenchmarkingResult,
+  type YearOnYearTrend,
+  type ComparableMultiYearData,
+  type TrendComparison,
 } from "./benchmarking-engine";
 
 // AI-Enhanced Benchmarking Service
@@ -144,7 +152,6 @@ export {
   type WorkingCapitalAdjustmentResult,
   type ComparableRejectionResult,
   type ArmLengthConclusionResult,
-  type EnhancedBenchmarkingResult,
 } from "./benchmarking-ai";
 
 // =============================================================================
@@ -501,11 +508,371 @@ export {
 } from "./dsc-signing-engine";
 
 // =============================================================================
+// SECONDARY ADJUSTMENT ENGINE (Section 92CE)
+// =============================================================================
+
+export {
+  SecondaryAdjustmentEngine,
+  createSecondaryAdjustmentEngine,
+  type SecondaryAdjustmentInput,
+  type SecondaryAdjustmentResult,
+  type DeemedDividendResult,
+  type DeemedLoanInterestResult,
+  type RepatriationEvent,
+  type RepatriationTracker,
+  type SecondaryAdjustmentValidationIssue,
+} from "./secondary-adjustment-engine";
+
+export {
+  SecondaryAdjustmentAIService,
+  createSecondaryAdjustmentAIService,
+  getSecondaryAdjustmentAIService,
+  type EnhancedSecondaryAdjustmentResult,
+  type RepatriationStrategy,
+  type RepatriationStrategyResult,
+} from "./secondary-adjustment-ai";
+
+// =============================================================================
+// PENALTY COMPUTATION ENGINE
+// =============================================================================
+
+export {
+  PenaltyEngine,
+  createPenaltyEngine,
+  EntityType as PenaltyEntityType,
+  type PenaltyInput,
+  type ConcealmentPenaltyResult,
+  type DocumentationPenaltyResult,
+  type ReportFailurePenaltyResult,
+  type InterestResult,
+  type TotalPenaltyExposure,
+  type MitigationAnalysis,
+} from "./penalty-engine";
+
+export {
+  PenaltyAIService,
+  createPenaltyAIService,
+  getPenaltyAIService,
+  type EnhancedPenaltyExposure,
+  type PenaltyDefenseNarrative,
+  type AIPenaltyAnalysis,
+} from "./penalty-ai";
+
+// =============================================================================
+// THIN CAPITALIZATION ENGINE (Section 94B)
+// =============================================================================
+
+export {
+  ThinCapitalizationEngine,
+  createThinCapEngine,
+  type ThinCapInput,
+  type ThinCapResult,
+  type EBITDAResult,
+  type InterestAnalysis,
+  type CarryforwardResult,
+  type ExemptionResult,
+  type FinancialData as ThinCapFinancialData,
+  type InterestExpense as ThinCapInterestExpense,
+  INTEREST_THRESHOLD,
+  EBITDA_LIMITATION_PERCENTAGE,
+  CARRYFORWARD_YEARS,
+  Section94BEntityType,
+  LenderType,
+  calculateAllowableInterest,
+  calculateDisallowedInterest,
+  calculateEBITDA,
+  isExemptEntity,
+} from "./thin-cap-engine";
+
+export {
+  ThinCapAIService,
+  createThinCapAIService,
+  getThinCapAIService,
+  type EnhancedThinCapResult,
+  type EBITDAOptimizationAnalysis,
+  type MultiYearProjection,
+  type RestructuringOpportunity,
+} from "./thin-cap-ai";
+
+// =============================================================================
+// MAM SELECTION ENGINE
+// =============================================================================
+
+export {
+  MAMSelectionEngine,
+  createMAMSelectionEngine,
+  getMethodDetails,
+  TPMethod,
+  TransactionType as MAMTransactionType,
+  FunctionalProfile as MAMFunctionalProfile,
+  type MAMSelectionInput,
+  type MAMSelectionResult,
+  type MethodRanking,
+  type ComparabilityAssessment,
+  type MethodRejection,
+  type RecommendedPLI,
+} from "./mam-selection-engine";
+
+export {
+  MAMSelectionAIService,
+  createMAMSelectionAIService,
+  getMAMSelectionAIService,
+  type EnhancedMAMSelectionResult,
+  type AIMAMAnalysis,
+  type OECDComplianceCheck,
+  type IndianTPRulesCheck,
+  type DocumentationGuidance,
+  type MAMRiskAnalysis,
+  type AlternativeScenario,
+} from "./mam-selection-ai";
+
+// =============================================================================
+// DISPUTE WORKFLOW ENGINE (DRP/ITAT)
+// =============================================================================
+
+export {
+  DisputeWorkflowEngine,
+  createDisputeWorkflowEngine,
+  getDisputeWorkflowEngine,
+  type TPOOrder,
+  type DraftAssessmentOrder,
+  type DRPApplication,
+  type DRPObjection,
+  type DRPTimeline,
+  type DRPDirection,
+  type ITATAppeal,
+  type ITATTimeline,
+  type StayApplication,
+  type GroundsOfAppeal,
+  type Form35Data,
+  type Form36Data,
+  type DRPDocument,
+  type EligibilityResult,
+  type ProgressTracker,
+} from "./dispute-workflow-engine";
+
+// =============================================================================
+// COMPARABILITY ADJUSTMENTS ENGINE
+// =============================================================================
+
+export {
+  ComparabilityAdjustmentsEngine,
+  createComparabilityAdjustmentsEngine,
+  getComparabilityAdjustmentsEngine,
+  AdjustmentType,
+  IndustryType,
+  RiskType,
+  AccountingStandard,
+  type ComparableEntity,
+  type ComparableFinancials,
+  type TestedPartyData,
+  type WorkingCapitalInput,
+  type WorkingCapitalResult,
+  type RiskAdjustmentInput,
+  type RiskAdjustmentResult,
+  type CapacityAdjustmentInput,
+  type CapacityAdjustmentResult,
+  type GeographicAdjustmentInput,
+  type GeographicAdjustmentResult,
+  type AccountingAdjustmentInput,
+  type AccountingAdjustmentResult,
+  type AdjustedComparable,
+  type ComparabilityAnalysisResult,
+} from "./comparability-adjustments-engine";
+
+// =============================================================================
+// CBCR FULL ENGINE (Form 3CEAD)
+// =============================================================================
+
+export {
+  CbCREngine,
+  createCbCREngine,
+  getCbCREngine,
+  CbCREntityRole,
+  CbCRBusinessActivity,
+  CBCR_THRESHOLDS,
+  INDIA_CBCR_FORMS,
+  KEY_JURISDICTIONS,
+  type CbCRApplicabilityInput,
+  type CbCRApplicabilityResult,
+  type CbCRInput,
+  type CbCRGenerationResult,
+  type CbCRValidationResult as CbCREngineValidationResult,
+  type CbCRSummaryStatistics,
+  type EntityData as CbCREntityData,
+  type JurisdictionAggregation,
+} from "./cbcr-engine";
+
+// =============================================================================
+// BFSI INDUSTRY MODULE
+// =============================================================================
+
+export {
+  BFSIModule,
+  createBFSIModule,
+  getBFSIModule,
+  BFSITransactionType,
+  type LoanPricingInput as BFSILoanPricingInput,
+  type LoanPricingResult as BFSILoanPricingResult,
+  type GuaranteePricingInput,
+  type GuaranteePricingResult,
+  type CaptiveInsuranceInput,
+  type CaptiveInsuranceResult,
+  type TreasuryServiceInput,
+  type TreasuryServiceResult,
+  type CashPoolInput,
+  type CashPoolResult,
+} from "./modules/bfsi-module";
+
+// =============================================================================
+// DIGITAL ECONOMY MODULE
+// =============================================================================
+
+export {
+  DigitalEconomyModule,
+  createDigitalEconomyModule,
+  getDigitalEconomyModule,
+  DigitalServiceType,
+  type PillarOneInput,
+  type PillarOneResult,
+  type PillarTwoInput,
+  type PillarTwoResult,
+  type DigitalProfitSplitInput,
+  type DigitalProfitSplitResult,
+  type UserParticipationInput,
+  type UserParticipationResult,
+  type MarketingIntangibleInput,
+  type MarketingIntangibleResult,
+  type GloBEJurisdictionData,
+  type GloBEJurisdictionAnalysis,
+} from "./modules/digital-economy-module";
+
+// =============================================================================
+// BUSINESS RESTRUCTURING MODULE
+// =============================================================================
+
+export {
+  BusinessRestructuringModule,
+  createBusinessRestructuringModule,
+  getBusinessRestructuringModule,
+  RestructuringType,
+  ValuationMethod,
+  type RestructuringInput,
+  type RestructuringResult,
+  type ExitChargeResult,
+  type TerminationPaymentResult,
+  type GoingConcernResult,
+  type IntangiblesTransferResult,
+  type WorkforceTransferResult,
+  type DEMPEAnalysis,
+  type OECDComplianceAssessment,
+} from "./modules/restructuring-module";
+
+// =============================================================================
+// CONSTANTS EXPORTS
+// =============================================================================
+
+export {
+  PRIMARY_ADJUSTMENT_THRESHOLD,
+  REPATRIATION_DEADLINE_DAYS,
+  SecondaryAdjustmentTrigger,
+  SecondaryAdjustmentOption,
+  DEEMED_DIVIDEND_RULES,
+  SECONDARY_ADJUSTMENT_EXEMPTIONS,
+  AY_SPECIFIC_RULES as SECONDARY_ADJUSTMENT_AY_RULES,
+  getSecondaryAdjustmentInterestRate,
+  calculateRepatriationDeadline,
+  isSecondaryAdjustmentApplicable,
+} from "./constants/secondary-adjustment-rules";
+
+export {
+  PenaltySection,
+  CONCEALMENT_PENALTY_RATES,
+  DOCUMENTATION_PENALTY_271AA,
+  REPORT_FAILURE_PENALTY_271BA,
+  INTEREST_234A,
+  INTEREST_234B,
+  INTEREST_234C,
+  INTEREST_234D,
+  PENALTY_MITIGATION_FACTORS,
+  calculateConcealmentPenaltyRange,
+  calculate271AAPenalty,
+  calculate271BAPenalty,
+} from "./constants/penalty-rules";
+
+export {
+  AY_THIN_CAP_RULES,
+  EXEMPT_ENTITIES as THIN_CAP_EXEMPT_ENTITIES,
+  CARRYFORWARD_RULES,
+  isSection94BApplicable,
+} from "./constants/thin-cap-rules";
+
+export {
+  MAM_SELECTION_FACTORS,
+  TRANSACTION_METHOD_MAPPING,
+  FUNCTIONAL_PROFILE_MAPPING,
+  METHOD_REJECTION_RATIONALES,
+  getMethodDetails as getMAMMethodDetails,
+  getPreferredMethods,
+} from "./constants/mam-criteria";
+
+export {
+  DisputeStage,
+  DisputeStatus,
+  FormType as DisputeFormType,
+  DISPUTE_TIMELINES,
+  FORM_REQUIREMENTS,
+  STANDARD_TP_GROUNDS,
+  calculateDeadline,
+  isWithinTimeLimit,
+} from "./constants/dispute-timelines";
+
+export {
+  WORKING_CAPITAL_PARAMETERS,
+  INDUSTRY_WORKING_CAPITAL_BENCHMARKS,
+  RISK_ADJUSTMENT_FACTORS,
+  INDUSTRY_CAPACITY_PARAMETERS,
+  GEOGRAPHIC_FACTORS,
+  PLI_ADJUSTMENT_THRESHOLDS,
+} from "./constants/adjustment-parameters";
+
+export {
+  CBCR_VALIDATION_RULES,
+  isCbCRApplicable,
+  calculateCbCRDeadline,
+  calculateCbCRPenalty,
+} from "./constants/cbcr-rules";
+
+export {
+  INTEREST_RATE_BENCHMARKS,
+  CREDIT_RATING_SPREADS,
+  GUARANTEE_FEE_RANGES,
+  CAPTIVE_INSURANCE_PARAMETERS,
+  TREASURY_SERVICE_FEES,
+  NBFC_LENDING_PARAMETERS,
+  getBenchmarkRate,
+  getCreditSpread,
+  getGuaranteeFeeRange,
+} from "./constants/bfsi-benchmarks";
+
+export {
+  PILLAR_ONE_THRESHOLDS,
+  PILLAR_TWO_THRESHOLDS,
+  DIGITAL_SERVICE_CHARACTERISTICS,
+  USER_PARTICIPATION_FACTORS,
+  DIGITAL_PROFIT_SPLIT_KEYS,
+  isInScopeForAmountA,
+  isInScopeForGloBE,
+  calculateAmountAReallocation,
+  calculateGloBETopUp,
+} from "./constants/digital-economy-rules";
+
+// =============================================================================
 // VERSION INFO
 // =============================================================================
 
 export const VERSION = {
-  core: "1.4.0",
+  core: "2.0.0",
   safeHarbourRules: "2024-25", // Valid through AY 2026-27
   form3CEBSchema: "1.4",
   aiService: "3.0.0",
@@ -516,13 +883,26 @@ export const VERSION = {
   comparableEngine: "1.0.0",
   efilingEngine: "1.0.0",
   dscEngine: "1.0.0",
-  lastUpdated: "2025-01-29",
+  secondaryAdjustmentEngine: "1.0.0",
+  penaltyEngine: "1.0.0",
+  thinCapEngine: "1.0.0",
+  mamSelectionEngine: "1.0.0",
+  disputeWorkflowEngine: "1.0.0",
+  comparabilityAdjustmentsEngine: "1.0.0",
+  cbcrEngine: "1.0.0",
+  bfsiModule: "1.0.0",
+  digitalEconomyModule: "1.0.0",
+  restructuringModule: "1.0.0",
+  lastUpdated: "2026-01-30",
   features: {
     aiIntegration: true,
     supportedProviders: ["anthropic", "openai", "google"],
     tier1AI: ["safe-harbour", "form-3ceb", "benchmarking"],
     tier2AI: ["master-file", "dashboard", "accounting-connector"],
     tier3AI: ["cbcr", "tp-dispute", "analytics"],
+    regulatory: ["secondary-adjustment", "penalty", "thin-cap"],
+    workflow: ["mam-selection", "dispute-workflow", "comparability-adjustments"],
+    industryModules: ["bfsi", "digital-economy", "restructuring"],
     reference: ["oecd-guidelines", "case-law"],
     rates: ["forex", "interest-rates"],
     integrations: ["comparables", "efiling", "dsc-signing"],

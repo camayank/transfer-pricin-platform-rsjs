@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import {
+  checkPermission,
+  PermissionAction,
+} from "@/lib/api/permissions";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,16 +12,20 @@ interface RouteParams {
 // GET /api/clients/[id] - Get a single client
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check READ permission on clients
+    const { authorized, user, error } = await checkPermission("clients", PermissionAction.READ);
+    if (!authorized || !user) {
+      return error;
     }
 
     const { id } = await params;
 
-    const client = await prisma.client.findUnique({
-      where: { id },
+    // Find client with tenant isolation
+    const client = await prisma.client.findFirst({
+      where: {
+        id,
+        firmId: user.firmId, // Ensure user can only access their firm's clients
+      },
       include: {
         engagements: {
           orderBy: { createdAt: "desc" },
@@ -46,18 +53,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/clients/[id] - Update a client
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check UPDATE permission on clients
+    const { authorized, user, error } = await checkPermission("clients", PermissionAction.UPDATE);
+    if (!authorized || !user) {
+      return error;
     }
 
     const { id } = await params;
     const body = await request.json();
 
-    // Check if client exists
-    const existingClient = await prisma.client.findUnique({
-      where: { id },
+    // Check if client exists and belongs to user's firm
+    const existingClient = await prisma.client.findFirst({
+      where: {
+        id,
+        firmId: user.firmId,
+      },
     });
 
     if (!existingClient) {
@@ -78,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       const duplicatePan = await prisma.client.findFirst({
         where: {
           pan: body.pan,
-          firmId: existingClient.firmId,
+          firmId: user.firmId,
           NOT: { id },
         },
       });
@@ -91,9 +101,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Remove firmId from body to prevent changing firm
+    const { firmId, ...updateData } = body;
+
     const client = await prisma.client.update({
       where: { id },
-      data: body,
+      data: updateData,
     });
 
     return NextResponse.json({ client });
@@ -109,17 +122,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/clients/[id] - Delete a client
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check DELETE permission on clients
+    const { authorized, user, error } = await checkPermission("clients", PermissionAction.DELETE);
+    if (!authorized || !user) {
+      return error;
     }
 
     const { id } = await params;
 
-    // Check if client exists
-    const existingClient = await prisma.client.findUnique({
-      where: { id },
+    // Check if client exists and belongs to user's firm
+    const existingClient = await prisma.client.findFirst({
+      where: {
+        id,
+        firmId: user.firmId,
+      },
     });
 
     if (!existingClient) {
