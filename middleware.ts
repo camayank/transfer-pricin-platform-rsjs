@@ -1,6 +1,6 @@
 /**
  * ================================================================================
- * DIGICOMPLY NEXT.JS PROXY
+ * DIGICOMPLY NEXT.JS MIDDLEWARE
  *
  * Handles authentication and authorization at the network boundary.
  * Enforces route-based access control before requests reach API handlers.
@@ -88,7 +88,7 @@ const publicRoutes = [
   /^\/fonts/,
 ];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip public routes
