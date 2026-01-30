@@ -1,34 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/api/permissions";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 
-// GET /api/dashboard/status - Get unified status overview
+// GET /api/dashboard/status - Get TP dashboard status overview
 export async function GET() {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    // Check for analytics READ permission (MANAGER+ roles)
+    const { authorized, user, error } = await checkPermission("analytics", PermissionAction.READ);
+    if (!authorized || !user) return error;
 
     const firmId = user.firmId;
 
     // Fetch all data in parallel
-    const [
-      leads,
-      clients,
-      engagements,
-      tasks,
-      upsellOpportunities,
-      feedbacks,
-    ] = await Promise.all([
-      // Leads
-      prisma.lead.findMany({
-        where: { firmId },
-        select: { id: true, status: true, estimatedValue: true, createdAt: true },
-      }),
+    const [clients, engagements, disputes, documents] = await Promise.all([
       // Clients
       prisma.client.findMany({
         where: { firmId },
@@ -37,42 +21,43 @@ export async function GET() {
       // Engagements
       prisma.engagement.findMany({
         where: { client: { firmId } },
-        select: { id: true, status: true, dueDate: true, createdAt: true },
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          totalRptValue: true,
+          createdAt: true,
+        },
       }),
-      // Tasks
-      prisma.projectTask.findMany({
-        where: { project: { firmId } },
-        select: { id: true, status: true, priority: true, dueDate: true, createdAt: true },
+      // Disputes
+      prisma.disputeCase.findMany({
+        where: { engagement: { client: { firmId } } },
+        select: {
+          id: true,
+          stage: true,
+          status: true,
+          amountAtStake: true,
+          nextHearingDate: true,
+          createdAt: true,
+        },
       }),
-      // Upsell Opportunities
-      prisma.upsellOpportunity.findMany({
-        where: { firmId },
-        select: { id: true, status: true, estimatedValue: true, createdAt: true },
-      }),
-      // Feedback
-      prisma.salesFeedback.findMany({
-        where: { firmId },
-        select: { id: true, feedbackType: true, sentiment: true, requiresFollowUp: true, followUpCompletedAt: true, createdAt: true },
+      // Documents
+      prisma.document.findMany({
+        where: {
+          OR: [
+            { client: { firmId } },
+            { engagement: { client: { firmId } } },
+          ],
+        },
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          createdAt: true,
+        },
       }),
     ]);
-
-    // Lead stats
-    const leadStats = {
-      total: leads.length,
-      new: leads.filter((l) => l.status === "NEW").length,
-      contacted: leads.filter((l) => l.status === "CONTACTED").length,
-      qualified: leads.filter((l) => l.status === "QUALIFIED").length,
-      proposalSent: leads.filter((l) => l.status === "PROPOSAL_SENT").length,
-      negotiation: leads.filter((l) => l.status === "NEGOTIATION").length,
-      won: leads.filter((l) => l.status === "WON").length,
-      lost: leads.filter((l) => l.status === "LOST").length,
-      pipelineValue: leads
-        .filter((l) => !["WON", "LOST"].includes(l.status))
-        .reduce((sum, l) => sum + (Number(l.estimatedValue) || 0), 0),
-      wonValue: leads
-        .filter((l) => l.status === "WON")
-        .reduce((sum, l) => sum + (Number(l.estimatedValue) || 0), 0),
-    };
 
     // Client stats
     const clientStats = {
@@ -86,70 +71,91 @@ export async function GET() {
     const engagementStats = {
       total: engagements.length,
       notStarted: engagements.filter((e) => e.status === "NOT_STARTED").length,
-      inProgress: engagements.filter((e) => ["DATA_COLLECTION", "SAFE_HARBOUR_CHECK", "BENCHMARKING", "DOCUMENTATION"].includes(e.status)).length,
+      dataCollection: engagements.filter((e) => e.status === "DATA_COLLECTION").length,
+      safeHarbourCheck: engagements.filter((e) => e.status === "SAFE_HARBOUR_CHECK").length,
+      benchmarking: engagements.filter((e) => e.status === "BENCHMARKING").length,
+      documentation: engagements.filter((e) => e.status === "DOCUMENTATION").length,
       review: engagements.filter((e) => e.status === "REVIEW").length,
       approved: engagements.filter((e) => e.status === "APPROVED").length,
       filed: engagements.filter((e) => e.status === "FILED").length,
       completed: engagements.filter((e) => e.status === "COMPLETED").length,
-      overdue: engagements.filter((e) => e.dueDate && new Date(e.dueDate) < now && !["FILED", "COMPLETED"].includes(e.status)).length,
+      overdue: engagements.filter(
+        (e) =>
+          e.dueDate &&
+          new Date(e.dueDate) < now &&
+          !["FILED", "COMPLETED"].includes(e.status)
+      ).length,
+      critical: engagements.filter(
+        (e) => e.priority === "CRITICAL" && !["FILED", "COMPLETED"].includes(e.status)
+      ).length,
+      high: engagements.filter(
+        (e) => e.priority === "HIGH" && !["FILED", "COMPLETED"].includes(e.status)
+      ).length,
+      totalRptValue: engagements.reduce(
+        (sum, e) => sum + (Number(e.totalRptValue) || 0),
+        0
+      ),
     };
 
-    // Task stats
-    const taskStats = {
-      total: tasks.length,
-      todo: tasks.filter((t) => t.status === "TODO").length,
-      inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
-      review: tasks.filter((t) => t.status === "REVIEW").length,
-      blocked: tasks.filter((t) => t.status === "BLOCKED").length,
-      done: tasks.filter((t) => t.status === "DONE").length,
-      overdue: tasks.filter((t) => t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE").length,
-      critical: tasks.filter((t) => t.priority === "CRITICAL" && t.status !== "DONE").length,
-      high: tasks.filter((t) => t.priority === "HIGH" && t.status !== "DONE").length,
+    // Dispute stats
+    const disputeStats = {
+      total: disputes.length,
+      open: disputes.filter((d) => d.status === "OPEN").length,
+      inProgress: disputes.filter((d) => d.status === "IN_PROGRESS").length,
+      pendingHearing: disputes.filter((d) => d.status === "PENDING_HEARING").length,
+      decided: disputes.filter((d) => d.status === "DECIDED").length,
+      byStage: {
+        TPO: disputes.filter((d) => d.stage === "TPO").length,
+        DRP: disputes.filter((d) => d.stage === "DRP").length,
+        AO: disputes.filter((d) => d.stage === "AO").length,
+        ITAT: disputes.filter((d) => d.stage === "ITAT").length,
+        HIGH_COURT: disputes.filter((d) => d.stage === "HIGH_COURT").length,
+        SUPREME_COURT: disputes.filter((d) => d.stage === "SUPREME_COURT").length,
+      },
+      totalAmountAtStake: disputes.reduce(
+        (sum, d) => sum + (Number(d.amountAtStake) || 0),
+        0
+      ),
+      upcomingHearings: disputes.filter(
+        (d) =>
+          d.nextHearingDate &&
+          new Date(d.nextHearingDate) > now &&
+          new Date(d.nextHearingDate) < new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+      ).length,
     };
 
-    // Upsell stats
-    const upsellStats = {
-      total: upsellOpportunities.length,
-      identified: upsellOpportunities.filter((u) => u.status === "IDENTIFIED").length,
-      qualified: upsellOpportunities.filter((u) => u.status === "QUALIFIED").length,
-      proposalSent: upsellOpportunities.filter((u) => u.status === "PROPOSAL_SENT").length,
-      negotiation: upsellOpportunities.filter((u) => u.status === "NEGOTIATION").length,
-      won: upsellOpportunities.filter((u) => u.status === "WON").length,
-      lost: upsellOpportunities.filter((u) => u.status === "LOST").length,
-      pipelineValue: upsellOpportunities
-        .filter((u) => !["WON", "LOST"].includes(u.status))
-        .reduce((sum, u) => sum + (Number(u.estimatedValue) || 0), 0),
-      wonValue: upsellOpportunities
-        .filter((u) => u.status === "WON")
-        .reduce((sum, u) => sum + (Number(u.estimatedValue) || 0), 0),
-    };
-
-    // Feedback stats
-    const feedbackStats = {
-      total: feedbacks.length,
-      positive: feedbacks.filter((f) => f.sentiment === "POSITIVE").length,
-      neutral: feedbacks.filter((f) => f.sentiment === "NEUTRAL").length,
-      negative: feedbacks.filter((f) => f.sentiment === "NEGATIVE").length,
-      pendingFollowUp: feedbacks.filter((f) => f.requiresFollowUp && !f.followUpCompletedAt).length,
-      complaints: feedbacks.filter((f) => f.feedbackType === "COMPLAINT").length,
+    // Document stats
+    const documentStats = {
+      total: documents.length,
+      draft: documents.filter((d) => d.status === "DRAFT").length,
+      inProgress: documents.filter((d) => d.status === "IN_PROGRESS").length,
+      pendingReview: documents.filter((d) => d.status === "PENDING_REVIEW").length,
+      review: documents.filter((d) => d.status === "REVIEW").length,
+      approved: documents.filter((d) => d.status === "APPROVED").length,
+      filed: documents.filter((d) => d.status === "FILED").length,
+      form3CEB: documents.filter((d) => d.type === "FORM_3CEB").length,
+      form3CEFA: documents.filter((d) => d.type === "FORM_3CEFA").length,
+      tpStudy: documents.filter((d) => d.type === "TP_STUDY").length,
     };
 
     // Overall summary
     const summary = {
-      totalWorkItems: leads.length + engagements.length + tasks.length + upsellOpportunities.length,
-      requiresAttention: leadStats.new + engagementStats.overdue + taskStats.overdue + taskStats.blocked + feedbackStats.pendingFollowUp + feedbackStats.complaints,
-      totalPipelineValue: leadStats.pipelineValue + upsellStats.pipelineValue,
-      totalWonValue: leadStats.wonValue + upsellStats.wonValue,
+      totalClients: clientStats.total,
+      activeEngagements: engagementStats.total - engagementStats.completed - engagementStats.filed,
+      overdueEngagements: engagementStats.overdue,
+      criticalItems: engagementStats.critical,
+      openDisputes: disputeStats.open + disputeStats.inProgress + disputeStats.pendingHearing,
+      pendingDocuments: documentStats.draft + documentStats.inProgress + documentStats.pendingReview,
+      totalRptValue: engagementStats.totalRptValue,
+      totalDisputeValue: disputeStats.totalAmountAtStake,
     };
 
     return NextResponse.json({
       summary,
-      leads: leadStats,
       clients: clientStats,
       engagements: engagementStats,
-      tasks: taskStats,
-      upsell: upsellStats,
-      feedback: feedbackStats,
+      disputes: disputeStats,
+      documents: documentStats,
     });
   } catch (error) {
     console.error("Error fetching status dashboard:", error);

@@ -3,6 +3,29 @@ import { Role, Plan, EngagementStatus, Priority, DocumentType, DocStatus } from 
 // Re-export Prisma enums
 export { Role, Plan, EngagementStatus, Priority, DocumentType, DocStatus };
 
+// Re-export role and permission types from single source of truth
+export {
+  PermissionAction,
+  HIERARCHY_ROLES,
+  FUNCTIONAL_ROLES,
+  ALL_ROLES,
+  ROLE_LABELS,
+  ROLE_CATEGORIES,
+  PERMISSION_MATRIX,
+  MENU_PERMISSIONS,
+  hasPermission,
+  getRoleLevel,
+  isRoleAtLeast,
+  canAccessMenu,
+  isManagementRole,
+  isFunctionalManager,
+  isFunctionalRole,
+  isHierarchicalRole,
+  type HierarchyRole,
+  type FunctionalRole,
+  type UserRole,
+} from "./roles";
+
 // Extend NextAuth types
 declare module "next-auth" {
   interface User {

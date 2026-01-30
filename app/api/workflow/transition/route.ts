@@ -1,12 +1,11 @@
 /**
  * Workflow Transition API
- * POST /api/workflow/transition - Execute status transition
+ * POST /api/workflow/transition - Execute status transition for engagements and documents
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { getAuthenticatedUser } from "@/lib/api/auth";
 import { EngagementStatus, DocStatus } from "@prisma/client";
 import {
   workflowEngine,
@@ -15,14 +14,19 @@ import {
   type WorkflowHistory,
 } from "@/lib/engines/workflow-engine";
 
+// Supported entity types for TP platform
+type SupportedEntityType = "ENGAGEMENT" | "DOCUMENT";
+
+function isSupportedEntityType(type: string): type is SupportedEntityType {
+  return type === "ENGAGEMENT" || type === "DOCUMENT";
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { user, error } = await getAuthenticatedUser();
+    if (!user) return error;
 
-    const { id: userId, firmId, role } = session.user;
+    const { id: userId, firmId, role } = user;
     const body = await request.json();
 
     // Validate required fields
@@ -33,12 +37,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate entity type
+    if (!isSupportedEntityType(body.entityType)) {
+      return NextResponse.json(
+        { error: "Invalid entity type. Supported types: ENGAGEMENT, DOCUMENT" },
+        { status: 400 }
+      );
+    }
+
     // Get current status based on entity type
     let currentStatus: string;
-    switch (body.entityType as WorkflowEntityType) {
+    switch (body.entityType) {
       case "ENGAGEMENT":
         const engagement = await prisma.engagement.findFirst({
-          where: { id: body.entityId, client: { firmId: firmId || undefined } },
+          where: { id: body.entityId, client: { firmId } },
           select: { status: true },
         });
         if (!engagement) {
@@ -49,50 +61,35 @@ export async function POST(request: NextRequest) {
 
       case "DOCUMENT":
         const document = await prisma.document.findFirst({
-          where: { id: body.entityId },
-          include: { client: true },
+          where: {
+            id: body.entityId,
+            OR: [
+              { client: { firmId } },
+              { engagement: { client: { firmId } } },
+            ],
+          },
+          select: { status: true },
         });
-        if (!document || document.client?.firmId !== firmId) {
+        if (!document) {
           return NextResponse.json({ error: "Document not found" }, { status: 404 });
         }
         currentStatus = document.status;
         break;
 
-      case "TASK":
-        const task = await prisma.projectTask.findFirst({
-          where: { id: body.entityId },
-          include: { project: true },
-        });
-        if (!task || task.project.firmId !== firmId) {
-          return NextResponse.json({ error: "Task not found" }, { status: 404 });
-        }
-        currentStatus = task.status;
-        break;
-
-      case "PROJECT":
-        const project = await prisma.project.findFirst({
-          where: { id: body.entityId, firmId: firmId || undefined },
-          select: { status: true },
-        });
-        if (!project) {
-          return NextResponse.json({ error: "Project not found" }, { status: 404 });
-        }
-        currentStatus = project.status;
-        break;
-
       default:
-        return NextResponse.json({ error: "Invalid entity type" }, { status: 400 });
+        // This should never be reached due to isSupportedEntityType check above
+        return NextResponse.json({ error: "Unsupported entity type" }, { status: 400 });
     }
 
     // Check if transition is allowed
     const transitionRequest: TransitionRequest = {
-      entityType: body.entityType,
+      entityType: body.entityType as WorkflowEntityType,
       entityId: body.entityId,
       currentStatus,
       targetStatus: body.targetStatus,
       userId,
       userRole: role,
-      firmId: firmId || "",
+      firmId,
       metadata: body.metadata,
     };
 
@@ -106,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     // Execute the transition
     const onUpdate = async (entityId: string, newStatus: string) => {
-      switch (body.entityType as WorkflowEntityType) {
+      switch (body.entityType as SupportedEntityType) {
         case "ENGAGEMENT":
           await prisma.engagement.update({
             where: { id: entityId },
@@ -119,33 +116,20 @@ export async function POST(request: NextRequest) {
             data: { status: newStatus as DocStatus },
           });
           break;
-        case "TASK":
-          await prisma.projectTask.update({
-            where: { id: entityId },
-            data: { status: newStatus },
-          });
-          break;
-        case "PROJECT":
-          await prisma.project.update({
-            where: { id: entityId },
-            data: { status: newStatus },
-          });
-          break;
       }
     };
 
     const onAudit = async (history: WorkflowHistory) => {
       // Log to immutable audit log
       const crypto = await import("crypto");
-      const auditFirmId = firmId || "";
       const lastLog = await prisma.immutableAuditLog.findFirst({
-        where: { firmId: auditFirmId },
+        where: { firmId },
         orderBy: { createdAt: "desc" },
         select: { currentHash: true },
       });
 
       const hashContent = JSON.stringify({
-        firmId: auditFirmId,
+        firmId,
         userId: history.transitionedBy,
         action: "STATUS_CHANGE",
         entityType: history.entityType,
@@ -159,8 +143,8 @@ export async function POST(request: NextRequest) {
 
       await prisma.immutableAuditLog.create({
         data: {
-          firmId: auditFirmId,
-          userId: history.transitionedBy,
+          firmId,
+          userId,
           action: "STATUS_CHANGE",
           entityType: history.entityType,
           entityId: history.entityId,
@@ -200,12 +184,10 @@ export async function POST(request: NextRequest) {
 // GET - Get allowed transitions for an entity
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { user, error } = await getAuthenticatedUser();
+    if (!user) return error;
 
-    const { role } = session.user;
+    const { role } = user;
     const searchParams = request.nextUrl.searchParams;
     const entityType = searchParams.get("entityType") as WorkflowEntityType;
     const currentStatus = searchParams.get("currentStatus");
@@ -213,6 +195,13 @@ export async function GET(request: NextRequest) {
     if (!entityType || !currentStatus) {
       return NextResponse.json(
         { error: "Missing entityType or currentStatus" },
+        { status: 400 }
+      );
+    }
+
+    if (!isSupportedEntityType(entityType)) {
+      return NextResponse.json(
+        { error: "Invalid entity type. Supported types: ENGAGEMENT, DOCUMENT" },
         { status: 400 }
       );
     }

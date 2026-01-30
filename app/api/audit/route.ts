@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auditService, AuditAction } from "@/lib/engines/audit-engine";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
 
 // GET /api/audit - Get audit logs with filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Check for audit READ permission (MANAGER+ or COMPLIANCE_MANAGER)
+    const { authorized, user, error } = await checkPermission("audit", PermissionAction.READ);
+    if (!authorized || !user) return error;
 
     const searchParams = request.nextUrl.searchParams;
     const firmId = searchParams.get("firmId");
@@ -22,12 +21,14 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    if (!firmId) {
-      return NextResponse.json({ error: "Firm ID is required" }, { status: 400 });
+    // Use user's firmId if not provided, or validate that provided firmId matches user's firm
+    const effectiveFirmId = firmId || user.firmId;
+    if (firmId && firmId !== user.firmId) {
+      return NextResponse.json({ error: "Access denied to this firm's data" }, { status: 403 });
     }
 
     // Build where clause
-    const where: Record<string, unknown> = { firmId };
+    const where: Record<string, unknown> = { firmId: effectiveFirmId };
 
     if (entityType) {
       where.entityType = entityType;
@@ -82,24 +83,29 @@ export async function GET(request: NextRequest) {
 // POST /api/audit - Create new audit log entry
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Check for audit CREATE permission (typically internal/system use)
+    const { authorized, user, error } = await checkPermission("audit", PermissionAction.CREATE);
+    if (!authorized || !user) return error;
 
     const body = await request.json();
     const { firmId, action, entityType, entityId, oldValues, newValues, metadata } = body;
 
-    if (!firmId || !action || !entityType) {
+    // Use user's firmId, or validate provided firmId matches user's firm
+    const effectiveFirmId = firmId || user.firmId;
+    if (firmId && firmId !== user.firmId) {
+      return NextResponse.json({ error: "Access denied to this firm's data" }, { status: 403 });
+    }
+
+    if (!action || !entityType) {
       return NextResponse.json(
-        { error: "firmId, action, and entityType are required" },
+        { error: "action and entityType are required" },
         { status: 400 }
       );
     }
 
     // Get the previous log entry for hash chaining
     const previousEntry = await prisma.immutableAuditLog.findFirst({
-      where: { firmId },
+      where: { firmId: effectiveFirmId },
       orderBy: { createdAt: "desc" },
       select: { id: true, currentHash: true },
     });
@@ -107,8 +113,8 @@ export async function POST(request: NextRequest) {
     // Create hash-chained entry
     const logData = auditService.createLogEntry(
       {
-        firmId,
-        userId: session.user.id,
+        firmId: effectiveFirmId,
+        userId: user.id,
         action: action as AuditAction,
         entityType,
         entityId,

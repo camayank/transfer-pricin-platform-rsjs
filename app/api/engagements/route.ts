@@ -1,30 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { firmFilterThroughClient } from "@/lib/api/auth";
+import { checkPermission, PermissionAction } from "@/lib/api/permissions";
+import { EngagementStatus, Priority } from "@prisma/client";
 
-// GET /api/engagements - Get all engagements
+// GET /api/engagements - Get all engagements for the user's firm
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Check for engagements READ permission
+    const { authorized, user, error } = await checkPermission("engagements", PermissionAction.READ);
+    if (!authorized || !user) return error;
 
     const searchParams = request.nextUrl.searchParams;
     const clientId = searchParams.get("clientId");
     const status = searchParams.get("status");
     const year = searchParams.get("year");
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    // Build where clause with firm filter for security
+    const where: Record<string, unknown> = {
+      // SECURITY: Always filter by firm through client relation
+      ...firmFilterThroughClient(user.firmId),
+    };
 
     if (clientId) {
       where.clientId = clientId;
     }
 
     if (status && status !== "all") {
-      where.status = status;
+      where.status = status as EngagementStatus;
     }
 
     if (year) {
@@ -40,6 +43,13 @@ export async function GET(request: NextRequest) {
             name: true,
             pan: true,
             industry: true,
+          },
+        },
+        _count: {
+          select: {
+            transactions: true,
+            documents: true,
+            safeHarbourResults: true,
           },
         },
       },
@@ -59,11 +69,9 @@ export async function GET(request: NextRequest) {
 // POST /api/engagements - Create a new engagement
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Check for engagements CREATE permission (MANAGER+ roles)
+    const { authorized, user, error } = await checkPermission("engagements", PermissionAction.CREATE);
+    if (!authorized || !user) return error;
 
     const body = await request.json();
 
@@ -86,13 +94,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if client exists
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
+    // SECURITY: Check if client exists AND belongs to user's firm
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        firmId: user.firmId,
+      },
     });
 
     if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      );
     }
 
     // Check if engagement already exists for this client and year
@@ -115,12 +129,12 @@ export async function POST(request: NextRequest) {
         clientId,
         financialYear,
         assessmentYear: calculatedAY,
-        totalRptValue: totalRptValue || 0,
-        priority: priority || "MEDIUM",
+        totalRptValue: totalRptValue ? Number(totalRptValue) : null,
+        priority: (priority as Priority) || Priority.MEDIUM,
         dueDate: dueDate ? new Date(dueDate) : getDefaultDueDate(financialYear),
         notes,
         assignedToId,
-        status: "NOT_STARTED",
+        status: EngagementStatus.NOT_STARTED,
       },
       include: {
         client: {

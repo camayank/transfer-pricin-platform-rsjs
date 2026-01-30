@@ -1,49 +1,77 @@
 /**
  * ================================================================================
- * DIGICOMPLY NEXT.JS MIDDLEWARE
+ * DIGICOMPLY NEXT.JS PROXY
  *
- * Handles authentication and authorization at the edge.
+ * Handles authentication and authorization at the network boundary.
  * Enforces route-based access control before requests reach API handlers.
+ *
+ * Note: This is a lightweight check. Detailed permission checks happen in API routes.
  * ================================================================================
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { ALL_ROLES, HIERARCHY_ROLES, FUNCTIONAL_ROLES, type UserRole } from "@/types/roles";
 
 // Route protection configuration
 interface RouteConfig {
   pattern: RegExp;
-  allowedRoles: string[];
+  allowedRoles: readonly string[];
   requireAuth: boolean;
 }
+
+// All hierarchical roles (for general access)
+const ALL_HIERARCHICAL = [...HIERARCHY_ROLES] as const;
+
+// All roles including functional (for API routes where handlers do detailed checks)
+const ALL_AUTHENTICATED = [...ALL_ROLES] as const;
+
+// Admin roles only
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"] as const;
+
+// Roles that can manage users (PARTNER can create/update team members)
+const USER_MANAGEMENT_ROLES = ["ADMIN", "SUPER_ADMIN", "PARTNER"] as const;
+
+// Roles that can access analytics/compliance (MANAGER+ and functional managers)
+const ANALYTICS_ROLES = [
+  "MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN",
+  "OPERATIONS_MANAGER", "COMPLIANCE_MANAGER"
+] as const;
+
+// Roles that can access compliance (includes COMPLIANCE functional role)
+const COMPLIANCE_ROLES = [
+  "MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN",
+  "COMPLIANCE", "COMPLIANCE_MANAGER"
+] as const;
 
 // Define protected routes and their allowed roles
 const protectedRoutes: RouteConfig[] = [
   // Admin routes - ADMIN+ only
-  { pattern: /^\/dashboard\/admin/, allowedRoles: ["ADMIN", "SUPER_ADMIN"], requireAuth: true },
-  { pattern: /^\/api\/admin/, allowedRoles: ["ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  { pattern: /^\/dashboard\/admin/, allowedRoles: ADMIN_ROLES, requireAuth: true },
+  { pattern: /^\/api\/admin/, allowedRoles: ADMIN_ROLES, requireAuth: true },
 
-  // User management - ADMIN+ only
-  { pattern: /^\/api\/users/, allowedRoles: ["ADMIN", "SUPER_ADMIN", "PARTNER"], requireAuth: true },
+  // User management - ADMIN+ and PARTNER
+  { pattern: /^\/api\/users/, allowedRoles: USER_MANAGEMENT_ROLES, requireAuth: true },
+  { pattern: /^\/dashboard\/team/, allowedRoles: USER_MANAGEMENT_ROLES, requireAuth: true },
 
   // Settings - ADMIN+ only
-  { pattern: /^\/dashboard\/settings/, allowedRoles: ["ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  { pattern: /^\/dashboard\/settings/, allowedRoles: ADMIN_ROLES, requireAuth: true },
 
-  // Compliance/Audit - MANAGER+ only
-  { pattern: /^\/dashboard\/compliance/, allowedRoles: ["MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  // Compliance/Audit - MANAGER+ and COMPLIANCE roles
+  { pattern: /^\/dashboard\/compliance/, allowedRoles: COMPLIANCE_ROLES, requireAuth: true },
+  { pattern: /^\/api\/audit/, allowedRoles: COMPLIANCE_ROLES, requireAuth: true },
 
-  // Reports - MANAGER+ only
-  { pattern: /^\/dashboard\/analytics/, allowedRoles: ["MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  // Analytics/Status - MANAGER+ and functional managers
+  { pattern: /^\/dashboard\/analytics/, allowedRoles: ANALYTICS_ROLES, requireAuth: true },
+  { pattern: /^\/dashboard\/status/, allowedRoles: ANALYTICS_ROLES, requireAuth: true },
+  { pattern: /^\/api\/dashboard\/status/, allowedRoles: ANALYTICS_ROLES, requireAuth: true },
 
-  // Customer success - MANAGER+ only
-  { pattern: /^\/dashboard\/customer-success/, allowedRoles: ["MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN"], requireAuth: true },
-
-  // General dashboard routes - all authenticated users
-  { pattern: /^\/dashboard/, allowedRoles: ["TRAINEE", "ASSOCIATE", "MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  // General dashboard routes - all authenticated users (including functional roles)
+  { pattern: /^\/dashboard/, allowedRoles: ALL_AUTHENTICATED, requireAuth: true },
 
   // API routes - all authenticated users (specific permissions checked in handlers)
-  { pattern: /^\/api\/(?!auth)/, allowedRoles: ["TRAINEE", "ASSOCIATE", "MANAGER", "SENIOR_MANAGER", "PARTNER", "ADMIN", "SUPER_ADMIN"], requireAuth: true },
+  { pattern: /^\/api\/(?!auth)/, allowedRoles: ALL_AUTHENTICATED, requireAuth: true },
 ];
 
 // Public routes that don't require authentication
@@ -60,7 +88,7 @@ const publicRoutes = [
   /^\/fonts/,
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip public routes
@@ -140,7 +168,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Configure which routes the middleware runs on
+// Configure which routes the proxy runs on
 export const config = {
   matcher: [
     /*
