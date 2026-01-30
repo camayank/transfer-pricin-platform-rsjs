@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-:root {
+/* Dark theme (default) */
+:root,
+.dark {
   /* Backgrounds */
   --background: #000000;
   --bg-secondary: #0a0a0a;
@@ -31,6 +33,43 @@
   --text-secondary: #a1a1aa;
   --text-tertiary: #71717a;
   --text-muted: #52525b;
+
+  /* Radii */
+  --radius: 0.75rem;
+}
+
+/* Light theme */
+.light {
+  /* Backgrounds */
+  --background: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.12);
+
+  /* Accent (Indigo) */
+  --accent: #4f46e5;
+  --accent-light: #6366f1;
+  --accent-glow: rgba(79, 70, 229, 0.1);
+
+  /* Status Colors */
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.1);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.1);
+  --error: #dc2626;
+  --error-bg: rgba(220, 38, 38, 0.1);
+  --info: #2563eb;
+  --info-bg: rgba(37, 99, 235, 0.1);
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
 
   /* Radii */
   --radius: 0.75rem;
@@ -68,35 +107,74 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
+/* Custom Scrollbar - Dark */
+.dark::-webkit-scrollbar,
+:root::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-::-webkit-scrollbar-track {
+.dark::-webkit-scrollbar-track,
+:root::-webkit-scrollbar-track {
   background: var(--bg-secondary);
 }
 
-::-webkit-scrollbar-thumb {
+.dark::-webkit-scrollbar-thumb,
+:root::-webkit-scrollbar-thumb {
   background: var(--border-default);
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.dark::-webkit-scrollbar-thumb:hover,
+:root::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
 
-/* Utility Classes */
-.gradient-mesh {
+/* Custom Scrollbar - Light */
+.light::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.light::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.light::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.light::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Utility Classes - Dark Theme */
+.dark .gradient-mesh,
+:root .gradient-mesh {
   background-image:
     radial-gradient(at 40% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
     radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
     radial-gradient(at 0% 50%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
 }
 
-.glass-card {
+.dark .glass-card,
+:root .glass-card {
   background: rgba(17, 17, 17, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Utility Classes - Light Theme */
+.light .gradient-mesh {
+  background-image:
+    radial-gradient(at 40% 20%, rgba(79, 70, 229, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(124, 58, 237, 0.06) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(37, 99, 235, 0.06) 0px, transparent 50%);
+}
+
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
 }

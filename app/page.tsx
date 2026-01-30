@@ -1,59 +1,95 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Shield,
   FileText,
   BarChart3,
   FolderOpen,
   Calculator,
-  Globe,
+  AlertTriangle,
+  RefreshCw,
+  Scale,
+  BookOpen,
+  Brain,
+  Users,
   ArrowRight,
   CheckCircle,
   Clock,
-  Users,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Shield,
-    title: "Safe Harbour Analysis",
-    description:
-      "Instant eligibility check against Rule 10TD/10TE/10TF with margin calculations",
-  },
-  {
     icon: FileText,
     title: "Form 3CEB Generator",
     description:
-      "Auto-generate compliant Form 3CEB with 50+ validation rules and e-filing ready JSON",
+      "5-step wizard with 50+ validation rules, e-filing ready JSON output",
+  },
+  {
+    icon: Shield,
+    title: "Safe Harbour Calculator",
+    description:
+      "Rule 10TD/10TE/10TF for IT/ITeS, KPO, R&D, loans, and guarantees",
   },
   {
     icon: BarChart3,
-    title: "Comparable Benchmarking",
+    title: "Benchmarking Analysis",
     description:
-      "TNMM analysis with PLI calculations and statistical range determination",
+      "TNMM/CPM/CUP with PLI calculations and statistical ranges",
   },
   {
     icon: FolderOpen,
     title: "Master File (3CEAA)",
     description:
-      "OECD BEPS-compliant Master File generation with all 5 mandatory parts",
+      "OECD BEPS-compliant with all 5 mandatory parts",
   },
   {
     icon: Calculator,
-    title: "PLI Calculator",
+    title: "Thin Capitalization (94B)",
     description:
-      "OP/OC, OP/OR, Berry Ratio calculations with automatic extraction from financials",
+      "30% EBITDA interest limitation with carryforward tracking",
   },
   {
-    icon: Globe,
-    title: "CbCR Support",
+    icon: AlertTriangle,
+    title: "Penalty Calculator",
     description:
-      "Country-by-Country Report preparation with Form 3CEAD compliance",
+      "271(1)(c), 271AA, 271BA, 271G exposure analysis",
+  },
+  {
+    icon: RefreshCw,
+    title: "Secondary Adjustment (92CE)",
+    description:
+      "Repatriation tracker with deemed dividend/loan analysis",
+  },
+];
+
+const platformCapabilities = [
+  {
+    icon: Scale,
+    title: "Dispute Management",
+    description: "TPO to Supreme Court tracking with deadline alerts",
+  },
+  {
+    icon: BookOpen,
+    title: "Reference Library",
+    description: "Case laws, OECD Guidelines with search and bookmarks",
+  },
+  {
+    icon: Brain,
+    title: "AI-Powered Analysis",
+    description: "Intelligent recommendations and mitigation strategies",
+  },
+  {
+    icon: Users,
+    title: "Client Management",
+    description: "Full lifecycle with RPT tracking and team assignments",
   },
 ];
 
 const stats = [
-  { value: "6", label: "TP Modules" },
+  { value: "7", label: "Specialized TP Tools" },
   { value: "70%", label: "Time Saved" },
   { value: "100%", label: "Compliance" },
 ];
@@ -81,6 +117,7 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <Link
               href="/login"
               className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -97,13 +134,13 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="gradient-mesh relative pt-32 pb-20">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] px-4 py-1.5 text-sm">
               <span className="mr-2 rounded-full bg-[var(--success)] px-2 py-0.5 text-xs text-white">
                 NEW
               </span>
               <span className="text-[var(--text-secondary)]">
-                India&apos;s first dedicated Transfer Pricing SaaS
+                India&apos;s most comprehensive Transfer Pricing platform
               </span>
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
@@ -111,9 +148,9 @@ export default function LandingPage() {
               <span className="text-[var(--accent)]">Automated</span>
             </h1>
             <p className="mb-8 text-lg text-[var(--text-secondary)]">
-              The complete platform for CA firms to manage Form 3CEB, Safe
-              Harbour analysis, benchmarking studies, and Master File generation
-              — all in one place.
+              India&apos;s most comprehensive Transfer Pricing platform for CA firms.
+              7 specialized compliance tools, dispute management, AI-powered analysis,
+              and complete reference library.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link href="/register">
@@ -150,18 +187,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Core TP Tools Section */}
       <section id="features" className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold text-[var(--text-primary)]">
-              Everything You Need for TP Compliance
+              7 Core TP Compliance Tools
             </h2>
             <p className="text-[var(--text-secondary)]">
               Purpose-built tools for every aspect of Transfer Pricing work
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {features.map((feature) => (
               <div
                 key={feature.title}
@@ -182,8 +219,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Workflow Section */}
+      {/* Platform Capabilities Section */}
       <section className="border-y border-[var(--border-subtle)] bg-[var(--bg-secondary)] py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-12 text-center">
+            <h2 className="mb-4 text-3xl font-bold text-[var(--text-primary)]">
+              Platform Capabilities
+            </h2>
+            <p className="text-[var(--text-secondary)]">
+              Beyond compliance tools - a complete practice management solution
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {platformCapabilities.map((capability) => (
+              <div
+                key={capability.title}
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-6"
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--info-bg)] text-[var(--info)]">
+                  <capability.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mb-2 font-semibold text-[var(--text-primary)]">
+                  {capability.title}
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {capability.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold text-[var(--text-primary)]">
@@ -217,7 +286,7 @@ export default function LandingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20">
+      <section className="border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] py-20">
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>

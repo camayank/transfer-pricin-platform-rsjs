@@ -3,6 +3,7 @@
 import { Bell, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface HeaderProps {
   title?: string;
@@ -46,6 +47,9 @@ export function Header({ title = "Dashboard", description }: HeaderProps) {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--accent)]"></span>
           </span>
         </button>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
       </div>
     </header>
   );
