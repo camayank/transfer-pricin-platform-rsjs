@@ -41,6 +41,8 @@ import {
   ThumbsUp,
   UserPlus,
   Activity,
+  Scale,
+  BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -164,8 +166,39 @@ const navigationSections: NavSection[] = [
         resource: "tools",
         action: PermissionAction.READ,
       },
+      {
+        title: "Secondary Adj (92CE)",
+        href: "/dashboard/tools/secondary-adjustment",
+        icon: RefreshCw,
+        resource: "tools",
+        action: PermissionAction.READ,
+      },
     ],
     minRole: "ASSOCIATE", // TRAINEE cannot access tools
+  },
+  {
+    title: "Disputes",
+    items: [
+      {
+        title: "Dispute Dashboard",
+        href: "/dashboard/disputes",
+        icon: Scale,
+        resource: "disputes",
+        action: PermissionAction.READ,
+      },
+    ],
+  },
+  {
+    title: "Reference",
+    items: [
+      {
+        title: "Case Laws & OECD",
+        href: "/dashboard/reference",
+        icon: BookOpen,
+        resource: "reference",
+        action: PermissionAction.READ,
+      },
+    ],
   },
   {
     title: "Analytics",
