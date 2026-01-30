@@ -12,37 +12,16 @@ import {
   FileText,
   BarChart3,
   FolderOpen,
-  Calendar,
   Settings,
   LogOut,
   Shield,
-  PieChart,
-  Target,
-  Heart,
-  Workflow,
-  RefreshCw,
-  ClipboardList,
-  ShieldCheck,
   AlertTriangle,
-  Trash2,
-  Files,
-  FileCog,
-  Search,
-  FolderKanban,
-  CheckSquare,
-  Clock,
-  MessageSquare,
-  Bell,
-  Brain,
-  UserCog,
-  Loader2,
-  TrendingUp,
-  DollarSign,
-  ThumbsUp,
-  UserPlus,
-  Activity,
+  RefreshCw,
   Scale,
   BookOpen,
+  Files,
+  UserCog,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -57,10 +36,10 @@ interface NavItem {
 interface NavSection {
   title: string;
   items: NavItem[];
-  minRole?: UserRole; // Minimum role to see this section
+  minRole?: UserRole;
 }
 
-// Navigation with permission requirements
+// Transfer Pricing focused navigation
 const navigationSections: NavSection[] = [
   {
     title: "Main",
@@ -69,13 +48,6 @@ const navigationSections: NavSection[] = [
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        resource: "clients",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Status Overview",
-        href: "/dashboard/status",
-        icon: Activity,
         resource: "clients",
         action: PermissionAction.READ,
       },
@@ -89,40 +61,7 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: "Sales",
-    items: [
-      {
-        title: "Leads",
-        href: "/dashboard/sales/leads",
-        icon: UserPlus,
-        resource: "leads",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Pipeline",
-        href: "/dashboard/sales/pipeline",
-        icon: TrendingUp,
-        resource: "pipeline",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Upsell",
-        href: "/dashboard/sales/upsell",
-        icon: DollarSign,
-        resource: "upsell",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Feedback",
-        href: "/dashboard/sales/feedback",
-        icon: ThumbsUp,
-        resource: "feedback",
-        action: PermissionAction.READ,
-      },
-    ],
-  },
-  {
-    title: "TP Tools",
+    title: "TP Compliance",
     items: [
       {
         title: "Safe Harbour",
@@ -174,13 +113,12 @@ const navigationSections: NavSection[] = [
         action: PermissionAction.READ,
       },
     ],
-    minRole: "ASSOCIATE", // TRAINEE cannot access tools
   },
   {
     title: "Disputes",
     items: [
       {
-        title: "Dispute Dashboard",
+        title: "Dispute Tracker",
         href: "/dashboard/disputes",
         icon: Scale,
         resource: "disputes",
@@ -201,94 +139,6 @@ const navigationSections: NavSection[] = [
     ],
   },
   {
-    title: "Analytics",
-    items: [
-      {
-        title: "Reports",
-        href: "/dashboard/analytics/reports",
-        icon: FileText,
-        resource: "reports",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Dashboards",
-        href: "/dashboard/analytics/dashboards",
-        icon: PieChart,
-        resource: "analytics",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "KPIs",
-        href: "/dashboard/analytics/kpis",
-        icon: Target,
-        resource: "analytics",
-        action: PermissionAction.READ,
-      },
-    ],
-    minRole: "MANAGER", // Only MANAGER+ can see analytics
-  },
-  {
-    title: "Customer Success",
-    items: [
-      {
-        title: "Health Scores",
-        href: "/dashboard/customer-success/health",
-        icon: Heart,
-        resource: "customer-success",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Playbooks",
-        href: "/dashboard/customer-success/playbooks",
-        icon: Workflow,
-        resource: "customer-success",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Renewals",
-        href: "/dashboard/customer-success/renewals",
-        icon: RefreshCw,
-        resource: "customer-success",
-        action: PermissionAction.READ,
-      },
-    ],
-    minRole: "MANAGER", // Only MANAGER+ can see customer success
-  },
-  {
-    title: "Compliance",
-    items: [
-      {
-        title: "Audit Log",
-        href: "/dashboard/compliance/audit-log",
-        icon: ClipboardList,
-        resource: "compliance",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Access Reviews",
-        href: "/dashboard/compliance/access-reviews",
-        icon: ShieldCheck,
-        resource: "compliance",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Incidents",
-        href: "/dashboard/compliance/incidents",
-        icon: AlertTriangle,
-        resource: "compliance",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Data Requests",
-        href: "/dashboard/compliance/data-requests",
-        icon: Trash2,
-        resource: "compliance",
-        action: PermissionAction.READ,
-      },
-    ],
-    minRole: "MANAGER", // Only MANAGER+ can see compliance
-  },
-  {
     title: "Documents",
     items: [
       {
@@ -298,97 +148,11 @@ const navigationSections: NavSection[] = [
         resource: "documents",
         action: PermissionAction.READ,
       },
-      {
-        title: "Templates",
-        href: "/dashboard/documents/templates",
-        icon: FileCog,
-        resource: "documents",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Search",
-        href: "/dashboard/documents/search",
-        icon: Search,
-        resource: "documents",
-        action: PermissionAction.READ,
-      },
     ],
   },
   {
-    title: "Projects",
+    title: "Administration",
     items: [
-      {
-        title: "Projects",
-        href: "/dashboard/projects",
-        icon: FolderKanban,
-        resource: "projects",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Tasks",
-        href: "/dashboard/projects/tasks",
-        icon: CheckSquare,
-        resource: "tasks",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Time Tracking",
-        href: "/dashboard/projects/time",
-        icon: Clock,
-        resource: "projects",
-        action: PermissionAction.READ,
-      },
-    ],
-  },
-  {
-    title: "Communication",
-    items: [
-      {
-        title: "Messages",
-        href: "/dashboard/messages",
-        icon: MessageSquare,
-        resource: "clients",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Notifications",
-        href: "/dashboard/notifications",
-        icon: Bell,
-        resource: "clients",
-        action: PermissionAction.READ,
-      },
-    ],
-  },
-  {
-    title: "AI",
-    items: [
-      {
-        title: "AI Insights",
-        href: "/dashboard/ai/insights",
-        icon: Brain,
-        resource: "ai",
-        action: PermissionAction.READ,
-      },
-      {
-        title: "Recommendations",
-        href: "/dashboard/ai/recommendations",
-        icon: Target,
-        resource: "ai",
-        action: PermissionAction.READ,
-      },
-    ],
-    minRole: "MANAGER", // Only MANAGER+ can see AI features
-  },
-  {
-    title: "Management",
-    items: [
-      {
-        title: "Calendar",
-        href: "/dashboard/calendar",
-        icon: Calendar,
-        resource: "clients",
-        action: PermissionAction.READ,
-      },
       {
         title: "Team",
         href: "/dashboard/team",
@@ -404,12 +168,12 @@ const navigationSections: NavSection[] = [
         action: PermissionAction.ADMIN,
       },
     ],
+    minRole: "MANAGER",
   },
 ];
 
 // Role display labels
 const roleLabels: Record<string, string> = {
-  // Hierarchical roles
   SUPER_ADMIN: "Super Admin",
   ADMIN: "Admin",
   PARTNER: "Partner",
@@ -417,28 +181,16 @@ const roleLabels: Record<string, string> = {
   MANAGER: "Manager",
   ASSOCIATE: "Associate",
   TRAINEE: "Trainee",
-  // Functional roles
-  SALES: "Sales",
-  SALES_MANAGER: "Sales Manager",
-  OPERATIONS: "Operations",
-  OPERATIONS_MANAGER: "Ops Manager",
-  FINANCE: "Finance",
-  FINANCE_MANAGER: "Finance Manager",
-  COMPLIANCE: "Compliance",
-  COMPLIANCE_MANAGER: "Compliance Mgr",
-  DELIVERY: "Delivery",
-  DELIVERY_MANAGER: "Delivery Manager",
 };
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const { can, isAtLeast, role, isLoading } = usePermissions();
 
   // Filter sections and items based on permissions
   const filteredSections = navigationSections
     .filter((section) => {
-      // Check minimum role requirement for section
       if (section.minRole && !isAtLeast(section.minRole)) {
         return false;
       }
@@ -472,10 +224,10 @@ export function Sidebar() {
         <div className="flex h-16 items-center border-b border-[var(--border-subtle)] px-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
-              <span className="text-sm font-bold text-white">DC</span>
+              <span className="text-sm font-bold text-white">TP</span>
             </div>
             <span className="text-lg font-semibold text-[var(--text-primary)]">
-              DigiComply
+              TP Platform
             </span>
           </Link>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,76 +28,17 @@ import {
   Eye,
   Calendar,
   User,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
-
-// Sample document data
-const sampleDocuments = [
-  {
-    id: "1",
-    name: "Transfer Pricing Policy 2025.pdf",
-    type: "PDF",
-    size: "2.4 MB",
-    category: "Policy",
-    clientName: "TechCorp India Pvt Ltd",
-    uploadedBy: "Priya Sharma",
-    uploadedAt: "2025-01-28",
-    lastModified: "2025-01-30",
-    status: "FINAL",
-    sharedWith: 3,
-  },
-  {
-    id: "2",
-    name: "Benchmarking Analysis Q3.xlsx",
-    type: "EXCEL",
-    size: "1.8 MB",
-    category: "Analysis",
-    clientName: "Pharma Solutions Ltd",
-    uploadedBy: "Rahul Mehta",
-    uploadedAt: "2025-01-25",
-    lastModified: "2025-01-29",
-    status: "DRAFT",
-    sharedWith: 2,
-  },
-  {
-    id: "3",
-    name: "Form 3CEB Draft.pdf",
-    type: "PDF",
-    size: "856 KB",
-    category: "Compliance",
-    clientName: "Auto Parts Manufacturing",
-    uploadedBy: "Amit Kumar",
-    uploadedAt: "2025-01-20",
-    lastModified: "2025-01-27",
-    status: "REVIEW",
-    sharedWith: 5,
-  },
-  {
-    id: "4",
-    name: "Client Meeting Notes.docx",
-    type: "WORD",
-    size: "124 KB",
-    category: "Notes",
-    clientName: "Global KPO Services",
-    uploadedBy: "Sneha Reddy",
-    uploadedAt: "2025-01-15",
-    lastModified: "2025-01-15",
-    status: "FINAL",
-    sharedWith: 1,
-  },
-  {
-    id: "5",
-    name: "APA Documentation.pdf",
-    type: "PDF",
-    size: "5.2 MB",
-    category: "Compliance",
-    clientName: "FinServ Holdings",
-    uploadedBy: "Vikram Patel",
-    uploadedAt: "2025-01-10",
-    lastModified: "2025-01-28",
-    status: "FINAL",
-    sharedWith: 4,
-  },
-];
+import {
+  useDocuments,
+  type Document,
+  type DocumentType,
+  type DocStatus,
+  getDocumentTypeLabel,
+  getDocStatusLabel,
+} from "@/lib/hooks/use-documents";
 
 const typeIcons: Record<string, typeof FileText> = {
   PDF: FileText,
@@ -105,30 +46,121 @@ const typeIcons: Record<string, typeof FileText> = {
   WORD: FileText,
   IMAGE: Image,
   OTHER: File,
+  // Document types from API
+  FORM_3CEB: FileText,
+  FORM_3CEFA: FileText,
+  FORM_3CEAA: FileText,
+  FORM_3CEAB: FileText,
+  FORM_3CEAC: FileText,
+  FORM_3CEAD: FileText,
+  LOCAL_FILE: FileText,
+  BENCHMARKING_REPORT: FileSpreadsheet,
+  TP_STUDY: FileText,
+  AGREEMENT: FileText,
+  FINANCIAL_STATEMENT: FileSpreadsheet,
 };
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "info" | "warning" | "success" }> = {
   DRAFT: { label: "Draft", variant: "secondary" },
+  IN_PROGRESS: { label: "In Progress", variant: "info" },
+  PENDING_REVIEW: { label: "Pending Review", variant: "warning" },
   REVIEW: { label: "In Review", variant: "warning" },
+  APPROVED: { label: "Approved", variant: "success" },
+  FILED: { label: "Filed", variant: "success" },
   FINAL: { label: "Final", variant: "success" },
   ARCHIVED: { label: "Archived", variant: "info" },
 };
 
+function formatFileSize(bytes?: number | null): string {
+  if (!bytes) return "—";
+  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const filteredDocuments = sampleDocuments.filter((doc) => {
-    const matchesSearch =
-      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.clientName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || doc.category === categoryFilter;
-    const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
+  // Fetch documents from API
+  const { data, isLoading, error } = useDocuments({
+    type: typeFilter !== "all" ? typeFilter : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const categories = [...new Set(sampleDocuments.map((d) => d.category))];
+  const documents = data?.documents || [];
+
+  // Filter locally for search
+  const filteredDocuments = useMemo(() => {
+    return documents.filter((doc: Document) => {
+      const docName = doc.name || doc.fileName || "";
+      const clientName = doc.client?.name || doc.engagement?.client?.name || "";
+      const matchesSearch =
+        !searchQuery ||
+        docName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        clientName.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [documents, searchQuery]);
+
+  // Document types for filter
+  const documentTypes: DocumentType[] = [
+    "FORM_3CEB",
+    "FORM_3CEFA",
+    "FORM_3CEAA",
+    "FORM_3CEAB",
+    "FORM_3CEAC",
+    "FORM_3CEAD",
+    "LOCAL_FILE",
+    "BENCHMARKING_REPORT",
+    "TP_STUDY",
+    "AGREEMENT",
+    "FINANCIAL_STATEMENT",
+    "OTHER",
+  ];
+
+  // Stats
+  const stats = useMemo(() => ({
+    total: documents.length,
+    filed: documents.filter((d: Document) => d.status === "FILED" || d.status === "APPROVED").length,
+    inProgress: documents.filter((d: Document) => d.status === "IN_PROGRESS" || d.status === "DRAFT").length,
+    typeCount: [...new Set(documents.map((d: Document) => d.type))].length,
+  }), [documents]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+        <span className="ml-2 text-[var(--text-secondary)]">Loading documents...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center">
+        <AlertCircle className="h-12 w-12 text-[var(--error)]" />
+        <p className="mt-4 text-lg font-medium text-[var(--text-primary)]">
+          Failed to load documents
+        </p>
+        <p className="text-[var(--text-secondary)]">
+          {error instanceof Error ? error.message : "Please try again later"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -162,7 +194,7 @@ export default function DocumentsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleDocuments.length}
+                  {stats.total}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">Total Documents</p>
               </div>
@@ -177,9 +209,9 @@ export default function DocumentsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleDocuments.filter((d) => d.status === "FINAL").length}
+                  {stats.filed}
                 </p>
-                <p className="text-sm text-[var(--text-muted)]">Finalized</p>
+                <p className="text-sm text-[var(--text-muted)]">Filed/Approved</p>
               </div>
             </div>
           </CardContent>
@@ -188,13 +220,13 @@ export default function DocumentsPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-[var(--warning-bg)] p-2 text-[var(--warning)]">
-                <Share2 className="h-5 w-5" />
+                <FileSpreadsheet className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleDocuments.reduce((sum, d) => sum + d.sharedWith, 0)}
+                  {stats.inProgress}
                 </p>
-                <p className="text-sm text-[var(--text-muted)]">Active Shares</p>
+                <p className="text-sm text-[var(--text-muted)]">In Progress</p>
               </div>
             </div>
           </CardContent>
@@ -207,9 +239,9 @@ export default function DocumentsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {categories.length}
+                  {stats.typeCount}
                 </p>
-                <p className="text-sm text-[var(--text-muted)]">Categories</p>
+                <p className="text-sm text-[var(--text-muted)]">Document Types</p>
               </div>
             </div>
           </CardContent>
@@ -227,15 +259,15 @@ export default function DocumentsPage() {
             className="pl-9"
           />
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Category" />
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Document Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
+            <SelectItem value="all">All Types</SelectItem>
+            {documentTypes.map((docType) => (
+              <SelectItem key={docType} value={docType}>
+                {getDocumentTypeLabel(docType)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -265,13 +297,19 @@ export default function DocumentsPage() {
                 No documents found
               </p>
               <p className="text-[var(--text-secondary)]">
-                Try adjusting your search or filters
+                {searchQuery || typeFilter !== "all" || statusFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Upload your first document to get started"}
               </p>
             </CardContent>
           </Card>
         ) : (
-          filteredDocuments.map((doc) => {
+          filteredDocuments.map((doc: Document) => {
             const TypeIcon = typeIcons[doc.type] || File;
+            const statusInfo = statusConfig[doc.status] || { label: doc.status, variant: "secondary" as const };
+            const clientName = doc.client?.name || doc.engagement?.client?.name || "—";
+            const docName = doc.name || doc.fileName || getDocumentTypeLabel(doc.type);
+
             return (
               <Card key={doc.id} className="hover:border-[var(--border-default)] transition-colors">
                 <CardContent className="p-4">
@@ -282,42 +320,52 @@ export default function DocumentsPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-[var(--text-primary)]">{doc.name}</h3>
-                          <Badge variant={statusConfig[doc.status].variant}>
-                            {statusConfig[doc.status].label}
+                          <h3 className="font-medium text-[var(--text-primary)]">{docName}</h3>
+                          <Badge variant={statusInfo.variant}>
+                            {statusInfo.label}
                           </Badge>
                         </div>
                         <div className="mt-1 flex items-center gap-3 text-sm text-[var(--text-muted)]">
-                          <span>{doc.clientName}</span>
+                          <span>{clientName}</span>
                           <span className="text-[var(--border-default)]">|</span>
-                          <span>{doc.category}</span>
-                          <span className="text-[var(--border-default)]">|</span>
-                          <span>{doc.size}</span>
+                          <span>{getDocumentTypeLabel(doc.type)}</span>
+                          {doc.fileSize && (
+                            <>
+                              <span className="text-[var(--border-default)]">|</span>
+                              <span>{formatFileSize(doc.fileSize)}</span>
+                            </>
+                          )}
+                          {doc.engagement && (
+                            <>
+                              <span className="text-[var(--border-default)]">|</span>
+                              <span>FY {doc.engagement.financialYear}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right text-sm text-[var(--text-muted)]">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {doc.uploadedBy}
-                        </div>
+                        {doc.acknowledgmentNo && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[var(--success)]">Ack: {doc.acknowledgmentNo}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {doc.lastModified}
+                          {formatDate(doc.updatedAt)}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
+                        {doc.filePath && (
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>

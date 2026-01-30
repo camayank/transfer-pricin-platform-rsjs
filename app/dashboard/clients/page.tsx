@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,115 +18,33 @@ import {
   Plus,
   Search,
   Filter,
-  MoreHorizontal,
   Building2,
   Mail,
   Phone,
   Calendar,
   ChevronRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
-
-// Sample client data
-const sampleClients = [
-  {
-    id: "1",
-    name: "TechCorp India Pvt Ltd",
-    pan: "AABCT1234A",
-    industry: "IT Services",
-    nicCode: "6201",
-    contactPerson: "Rahul Sharma",
-    contactEmail: "rahul@techcorp.com",
-    contactPhone: "9876543210",
-    city: "Bangalore",
-    state: "Karnataka",
-    status: "in_progress",
-    assignedTo: "Priya S.",
-    engagements: [
-      { year: "2025-26", status: "in_progress", dueDate: "2025-10-31" },
-    ],
-    totalRptValue: 82_00_00_000,
-  },
-  {
-    id: "2",
-    name: "Pharma Solutions Ltd",
-    pan: "AABCP5678B",
-    industry: "Pharmaceuticals",
-    nicCode: "2100",
-    contactPerson: "Meera Patel",
-    contactEmail: "meera@pharmasol.com",
-    contactPhone: "9876543211",
-    city: "Mumbai",
-    state: "Maharashtra",
-    status: "review",
-    assignedTo: "Rahul M.",
-    engagements: [
-      { year: "2025-26", status: "review", dueDate: "2025-10-31" },
-    ],
-    totalRptValue: 150_00_00_000,
-  },
-  {
-    id: "3",
-    name: "Auto Parts Manufacturing",
-    pan: "AABCA9012C",
-    industry: "Auto Ancillary",
-    nicCode: "2930",
-    contactPerson: "Amit Kumar",
-    contactEmail: "amit@autoparts.com",
-    contactPhone: "9876543212",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    status: "filed",
-    assignedTo: "Amit K.",
-    engagements: [
-      { year: "2025-26", status: "filed", dueDate: "2025-10-31" },
-    ],
-    totalRptValue: 45_00_00_000,
-  },
-  {
-    id: "4",
-    name: "Global KPO Services",
-    pan: "AABCG3456D",
-    industry: "KPO",
-    nicCode: "8220",
-    contactPerson: "Sneha Reddy",
-    contactEmail: "sneha@globalkpo.com",
-    contactPhone: "9876543213",
-    city: "Hyderabad",
-    state: "Telangana",
-    status: "not_started",
-    assignedTo: "Sneha R.",
-    engagements: [
-      { year: "2025-26", status: "not_started", dueDate: "2025-10-31" },
-    ],
-    totalRptValue: 65_00_00_000,
-  },
-  {
-    id: "5",
-    name: "FinServ Holdings",
-    pan: "AABCF7890E",
-    industry: "Financial Services",
-    nicCode: "6419",
-    contactPerson: "Vikram Singh",
-    contactEmail: "vikram@finserv.com",
-    contactPhone: "9876543214",
-    city: "Delhi",
-    state: "Delhi",
-    status: "data_collection",
-    assignedTo: "Vikram P.",
-    engagements: [
-      { year: "2025-26", status: "data_collection", dueDate: "2025-10-31" },
-    ],
-    totalRptValue: 200_00_00_000,
-  },
-];
+import { useClients, type Client } from "@/lib/hooks/use-clients";
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "warning" | "info" | "success" | "error" }> = {
+  // Lowercase versions
   not_started: { label: "Not Started", variant: "secondary" },
   data_collection: { label: "Data Collection", variant: "info" },
   in_progress: { label: "In Progress", variant: "warning" },
   review: { label: "Review", variant: "info" },
   filed: { label: "Filed", variant: "success" },
   completed: { label: "Completed", variant: "success" },
+  // Uppercase versions (from API/Database enums)
+  NOT_STARTED: { label: "Not Started", variant: "secondary" },
+  DATA_COLLECTION: { label: "Data Collection", variant: "info" },
+  IN_PROGRESS: { label: "In Progress", variant: "warning" },
+  REVIEW: { label: "Review", variant: "info" },
+  FILED: { label: "Filed", variant: "success" },
+  COMPLETED: { label: "Completed", variant: "success" },
+  ACTIVE: { label: "Active", variant: "success" },
+  INACTIVE: { label: "Inactive", variant: "secondary" },
 };
 
 function formatCurrency(amount: number): string {
@@ -144,18 +62,65 @@ export default function ClientsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [industryFilter, setIndustryFilter] = useState<string>("all");
 
-  // Filter clients
-  const filteredClients = sampleClients.filter((client) => {
-    const matchesSearch =
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.pan.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || client.status === statusFilter;
-    const matchesIndustry = industryFilter === "all" || client.industry === industryFilter;
-    return matchesSearch && matchesStatus && matchesIndustry;
+  // Fetch clients from API
+  const { data, isLoading, error } = useClients({
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    industry: industryFilter !== "all" ? industryFilter : undefined,
   });
 
-  // Get unique industries
-  const industries = [...new Set(sampleClients.map((c) => c.industry))];
+  const clients = data?.clients || [];
+
+  // Filter clients locally for immediate feedback while API updates
+  const filteredClients = useMemo(() => {
+    return clients.filter((client: Client) => {
+      const matchesSearch =
+        !searchQuery ||
+        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.pan.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || client.status === statusFilter;
+      const matchesIndustry = industryFilter === "all" || client.industry === industryFilter;
+      return matchesSearch && matchesStatus && matchesIndustry;
+    });
+  }, [clients, searchQuery, statusFilter, industryFilter]);
+
+  // Get unique industries from current data
+  const industries = useMemo(() => {
+    return [...new Set(clients.map((c: Client) => c.industry).filter(Boolean))] as string[];
+  }, [clients]);
+
+  // Stats calculations
+  const stats = useMemo(() => ({
+    total: clients.length,
+    inProgress: clients.filter((c: Client) => c.status === "IN_PROGRESS" || c.status === "DATA_COLLECTION").length,
+    filed: clients.filter((c: Client) => c.status === "FILED" || c.status === "COMPLETED").length,
+    totalRptValue: clients.reduce((sum: number, c: Client) => sum + (c.consolidatedRevenue || 0), 0),
+  }), [clients]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+        <span className="ml-2 text-[var(--text-secondary)]">Loading clients...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center">
+        <AlertCircle className="h-12 w-12 text-[var(--error)]" />
+        <p className="mt-4 text-lg font-medium text-[var(--text-primary)]">
+          Failed to load clients
+        </p>
+        <p className="text-[var(--text-secondary)]">
+          {error instanceof Error ? error.message : "Please try again later"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -167,10 +132,12 @@ export default function ClientsPage() {
             Manage your client portfolio and engagements
           </p>
         </div>
-        <Button>
-          <Plus className="mr-1 h-4 w-4" />
-          Add Client
-        </Button>
+        <Link href="/dashboard/clients/new">
+          <Button>
+            <Plus className="mr-1 h-4 w-4" />
+            Add Client
+          </Button>
+        </Link>
       </div>
 
       {/* Stats */}
@@ -183,7 +150,7 @@ export default function ClientsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleClients.length}
+                  {stats.total}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">Total Clients</p>
               </div>
@@ -198,7 +165,7 @@ export default function ClientsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleClients.filter((c) => c.status === "in_progress" || c.status === "data_collection").length}
+                  {stats.inProgress}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">In Progress</p>
               </div>
@@ -213,7 +180,7 @@ export default function ClientsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {sampleClients.filter((c) => c.status === "filed").length}
+                  {stats.filed}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">Filed</p>
               </div>
@@ -228,7 +195,7 @@ export default function ClientsPage() {
               </div>
               <div>
                 <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                  {formatCurrency(sampleClients.reduce((sum, c) => sum + c.totalRptValue, 0))}
+                  {formatCurrency(stats.totalRptValue)}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">Total RPT Value</p>
               </div>
@@ -287,75 +254,100 @@ export default function ClientsPage() {
                 No clients found
               </p>
               <p className="text-[var(--text-secondary)]">
-                Try adjusting your search or filters
+                {searchQuery || statusFilter !== "all" || industryFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Add your first client to get started"}
               </p>
             </CardContent>
           </Card>
         ) : (
-          filteredClients.map((client) => (
-            <Card key={client.id} className="hover:border-[var(--border-default)] transition-colors">
-              <CardContent className="p-0">
-                <Link href={`/dashboard/clients/${client.id}`}>
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent-glow)] text-[var(--accent)]">
-                        <Building2 className="h-6 w-6" />
+          filteredClients.map((client: Client) => {
+            const statusInfo = statusConfig[client.status] || statusConfig.not_started;
+            return (
+              <Card key={client.id} className="hover:border-[var(--border-default)] transition-colors">
+                <CardContent className="p-0">
+                  <Link href={`/dashboard/clients/${client.id}`}>
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent-glow)] text-[var(--accent)]">
+                          <Building2 className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-[var(--text-primary)]">
+                              {client.name}
+                            </h3>
+                            <Badge variant={statusInfo.variant}>
+                              {statusInfo.label}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
+                            <span>{client.pan}</span>
+                            {client.industry && (
+                              <>
+                                <span className="text-[var(--border-default)]">|</span>
+                                <span>{client.industry}</span>
+                              </>
+                            )}
+                            {client.city && (
+                              <>
+                                <span className="text-[var(--border-default)]">|</span>
+                                <span>{client.city}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-[var(--text-primary)]">
-                            {client.name}
-                          </h3>
-                          <Badge variant={statusConfig[client.status].variant}>
-                            {statusConfig[client.status].label}
-                          </Badge>
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
-                          <span>{client.pan}</span>
-                          <span className="text-[var(--border-default)]">|</span>
-                          <span>{client.industry}</span>
-                          <span className="text-[var(--border-default)]">|</span>
-                          <span>{client.city}</span>
-                        </div>
+
+                      <div className="flex items-center gap-6">
+                        {client.consolidatedRevenue && (
+                          <div className="hidden text-right md:block">
+                            <p className="font-medium text-[var(--accent)]">
+                              {formatCurrency(client.consolidatedRevenue)}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)]">RPT Value</p>
+                          </div>
+                        )}
+                        {client.assignedTo?.name && (
+                          <div className="hidden text-right md:block">
+                            <p className="text-sm text-[var(--text-secondary)]">
+                              {client.assignedTo.name}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)]">Assigned</p>
+                          </div>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                      <div className="hidden text-right md:block">
-                        <p className="font-medium text-[var(--accent)]">
-                          {formatCurrency(client.totalRptValue)}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)]">RPT Value</p>
+                    {/* Contact info footer */}
+                    {(client.contactPerson || client.contactEmail || client.contactPhone) && (
+                      <div className="flex items-center gap-6 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm">
+                        {client.contactPerson && (
+                          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <Users className="h-4 w-4" />
+                            {client.contactPerson}
+                          </div>
+                        )}
+                        {client.contactEmail && (
+                          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <Mail className="h-4 w-4" />
+                            {client.contactEmail}
+                          </div>
+                        )}
+                        {client.contactPhone && (
+                          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <Phone className="h-4 w-4" />
+                            {client.contactPhone}
+                          </div>
+                        )}
                       </div>
-                      <div className="hidden text-right md:block">
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          {client.assignedTo}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)]">Assigned</p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-                    </div>
-                  </div>
-
-                  {/* Contact info footer */}
-                  <div className="flex items-center gap-6 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm">
-                    <div className="flex items-center gap-2 text-[var(--text-muted)]">
-                      <Users className="h-4 w-4" />
-                      {client.contactPerson}
-                    </div>
-                    <div className="flex items-center gap-2 text-[var(--text-muted)]">
-                      <Mail className="h-4 w-4" />
-                      {client.contactEmail}
-                    </div>
-                    <div className="flex items-center gap-2 text-[var(--text-muted)]">
-                      <Phone className="h-4 w-4" />
-                      {client.contactPhone}
-                    </div>
-                  </div>
-                </Link>
-              </CardContent>
-            </Card>
-          ))
+                    )}
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

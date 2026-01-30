@@ -1,9 +1,9 @@
 /**
  * ================================================================================
- * DIGICOMPLY TRANSFER PRICING PLATFORM
+ * TRANSFER PRICING PLATFORM
  * Core Engine Library
  *
- * This is the main entry point for all core engines and utilities.
+ * This is the main entry point for all TP calculation engines and utilities.
  * Import from this file to access all platform functionality.
  *
  * Usage:
@@ -68,7 +68,6 @@ export {
   type FinancialData as SafeHarbourFinancialData,
 } from "./safe-harbour-engine";
 
-// AI-Enhanced Safe Harbour Service
 export {
   SafeHarbourAIService,
   createSafeHarbourAIService,
@@ -102,7 +101,6 @@ export {
   type ValidationResult as Form3CEBValidationResult,
 } from "./form-3ceb-engine";
 
-// AI-Enhanced Form 3CEB Service
 export {
   Form3CEBAIService,
   createForm3CEBAIService,
@@ -144,7 +142,6 @@ export {
   type TrendComparison,
 } from "./benchmarking-engine";
 
-// AI-Enhanced Benchmarking Service
 export {
   BenchmarkingAIService,
   createBenchmarkingAIService,
@@ -182,7 +179,6 @@ export {
   type APAInfo,
 } from "./master-file-engine";
 
-// AI-Enhanced Master File Service
 export {
   MasterFileAIService,
   createMasterFileAIService,
@@ -193,45 +189,6 @@ export {
   type FARAnalysisResult,
   type EnhancedMasterFile,
 } from "./master-file-ai";
-
-// =============================================================================
-// ACCOUNTING CONNECTOR ENGINE
-// =============================================================================
-
-export {
-  DataExtractionEngine,
-  TallyPrimeConnector,
-  ZohoBooksConnector,
-  AccountingConnector,
-  createTallyConnector,
-  createZohoConnector,
-  createDataExtractionEngine,
-  calculatePLIs as calculateAccountingPLIs,
-  AccountingSystem,
-  AccountType,
-  TransactionType as AccountingTransactionType,
-  TALLY_ACCOUNT_MAPPING,
-  RELATED_PARTY_KEYWORDS,
-  NATURE_CODE_MAPPING,
-  type AccountBalance,
-  type RelatedPartyTransaction,
-  type FinancialStatement,
-  type ConnectorConfig,
-  type ConnectionTestResult,
-} from "./accounting-connector-engine";
-
-// AI-Enhanced Accounting Connector Service
-export {
-  AccountingConnectorAIService,
-  createAccountingConnectorAIService,
-  createTallyConnectorWithAI,
-  createZohoConnectorWithAI,
-  type TransactionClassificationResult,
-  type RelatedPartyDetectionResult,
-  type NatureCodeRecommendation,
-  type FinancialAnomalyResult,
-  type EnhancedFinancialStatement,
-} from "./accounting-connector-ai";
 
 // =============================================================================
 // DASHBOARD ENGINE
@@ -254,19 +211,8 @@ export {
   type DashboardStats,
 } from "./dashboard-engine";
 
-// AI-Enhanced Dashboard Service
-export {
-  DashboardAIService,
-  createDashboardAIService,
-  type ComplianceRiskScore,
-  type ClientPriorityAnalysis,
-  type SmartNotification,
-  type DeadlinePrediction,
-  type EnhancedDashboardStats,
-} from "./dashboard-ai";
-
 // =============================================================================
-// TIER 3: CBCR AI SERVICE
+// CBCR AI SERVICE
 // =============================================================================
 
 export {
@@ -283,7 +229,7 @@ export {
 } from "./cbcr-ai";
 
 // =============================================================================
-// TIER 3: TP DISPUTE AI SERVICE
+// TP DISPUTE AI SERVICE
 // =============================================================================
 
 export {
@@ -300,23 +246,6 @@ export {
   type DocumentationStatus,
   type DisputeCase,
 } from "./tp-dispute-ai";
-
-// =============================================================================
-// TIER 3: ANALYTICS AI SERVICE
-// =============================================================================
-
-export {
-  AnalyticsAIService,
-  getAnalyticsAIService,
-  createAnalyticsAIService,
-  type PrecedentMiningResult,
-  type CrossBorderResult,
-  type TrendAnalysisResult,
-  type RiskPredictionResult,
-  type FinancialYearData,
-  type CrossBorderTransaction,
-  type BenchmarkData,
-} from "./analytics-ai";
 
 // =============================================================================
 // OECD GUIDELINES REFERENCE ENGINE
@@ -447,65 +376,6 @@ export {
   type RejectionAnalysis,
   type WorkingCapitalAdjustment,
 } from "./comparable-search-engine";
-
-// =============================================================================
-// E-FILING ENGINE
-// =============================================================================
-
-export {
-  EfilingEngine,
-  createEfilingEngine,
-  EFILING_ENGINE_VERSION,
-  getFormTypes,
-  getFormSchema,
-  getFormDeadline,
-  isFormOverdue,
-  getDaysUntilDeadline,
-  type FormType as EfilingFormType,
-  type SubmissionStatus,
-  type EfilingSubmission,
-  type SubmissionResponse,
-  type XMLValidationResult,
-  type SubmissionError,
-  type Form3CEBData,
-  type Form3CEAAData,
-  type Form3CEADData,
-  type InternationalTransactionEntry,
-  type JurisdictionEntry,
-  type CbCREntityEntry,
-  type SubmissionWorkflow,
-  type WorkflowStep,
-  type AuditLogEntry as EfilingAuditLogEntry,
-  type ComplianceStatus as EfilingComplianceStatus,
-} from "./efiling-engine";
-
-// =============================================================================
-// DSC SIGNING ENGINE
-// =============================================================================
-
-export {
-  DSCSigningEngine,
-  createDSCSigningEngine,
-  DSC_ENGINE_VERSION,
-  getSupportedProviders,
-  getSupportedSignatureTypes,
-  getDaysUntilExpiry,
-  isCertificateExpiringSoon,
-  type DSCProvider,
-  type DSCClass,
-  type SignatureType,
-  type CertificateInfo,
-  type SigningResponse,
-  type VerificationResponse,
-  type SigningError,
-  type SigningSession,
-  type DocumentSigningRequest,
-  type DocumentSigningResult,
-  type BatchSigningRequest,
-  type BatchSigningResult,
-  type SignatureAuditEntry,
-  type CertificateHealth,
-} from "./dsc-signing-engine";
 
 // =============================================================================
 // SECONDARY ADJUSTMENT ENGINE (Section 92CE)
@@ -769,6 +639,43 @@ export {
 } from "./modules/restructuring-module";
 
 // =============================================================================
+// AUDIT ENGINE
+// =============================================================================
+
+export {
+  AuditService,
+  auditService,
+  type AuditLogInput,
+  type AuditLogEntry,
+  type ChainVerificationResult,
+  AuditAction,
+} from "./audit-engine";
+
+// =============================================================================
+// RBAC ENGINE
+// =============================================================================
+
+export {
+  permissionService,
+  type Permission,
+  PermissionAction,
+} from "./rbac-engine";
+
+// =============================================================================
+// WORKFLOW ENGINE
+// =============================================================================
+
+export {
+  WorkflowEngine,
+  workflowEngine,
+  EngagementStatus as WorkflowEngagementStatus,
+  DocumentStatus as WorkflowDocumentStatus,
+  type WorkflowTransition,
+  type TransitionRequest,
+  type TransitionResult,
+} from "./workflow-engine";
+
+// =============================================================================
 // CONSTANTS EXPORTS
 // =============================================================================
 
@@ -873,16 +780,13 @@ export {
 
 export const VERSION = {
   core: "2.0.0",
-  safeHarbourRules: "2024-25", // Valid through AY 2026-27
+  safeHarbourRules: "2024-25",
   form3CEBSchema: "1.4",
-  aiService: "3.0.0",
   oecdGuidelines: "2022",
   caseLaw: "1.0.0",
   forexEngine: "1.0.0",
   interestRateEngine: "1.0.0",
   comparableEngine: "1.0.0",
-  efilingEngine: "1.0.0",
-  dscEngine: "1.0.0",
   secondaryAdjustmentEngine: "1.0.0",
   penaltyEngine: "1.0.0",
   thinCapEngine: "1.0.0",
@@ -894,17 +798,4 @@ export const VERSION = {
   digitalEconomyModule: "1.0.0",
   restructuringModule: "1.0.0",
   lastUpdated: "2026-01-30",
-  features: {
-    aiIntegration: true,
-    supportedProviders: ["anthropic", "openai", "google"],
-    tier1AI: ["safe-harbour", "form-3ceb", "benchmarking"],
-    tier2AI: ["master-file", "dashboard", "accounting-connector"],
-    tier3AI: ["cbcr", "tp-dispute", "analytics"],
-    regulatory: ["secondary-adjustment", "penalty", "thin-cap"],
-    workflow: ["mam-selection", "dispute-workflow", "comparability-adjustments"],
-    industryModules: ["bfsi", "digital-economy", "restructuring"],
-    reference: ["oecd-guidelines", "case-law"],
-    rates: ["forex", "interest-rates"],
-    integrations: ["comparables", "efiling", "dsc-signing"],
-  },
 };
