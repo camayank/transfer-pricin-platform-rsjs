@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import {
   createForm3CEBBuilder,
@@ -244,11 +245,12 @@ function generateForm3CEBJson(data: Form3CEBData) {
   };
 }
 
-// POST /api/form-3ceb - Validate and generate Form 3CEB
+// POST /api/form-3ceb - Validate, generate, and save Form 3CEB
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession();
     const body = await request.json();
-    const { action, data } = body;
+    const { action, data, engagementId, documentId } = body;
 
     if (action === "validate") {
       const errors = validateForm3CEB(data);
@@ -274,6 +276,173 @@ export async function POST(request: NextRequest) {
 
       const form3ceb = generateForm3CEBJson(data);
       return NextResponse.json({ form3ceb, warnings: errors.filter((e) => e.severity === "warning") });
+    }
+
+    if (action === "save") {
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      if (!engagementId) {
+        return NextResponse.json(
+          { error: "Engagement ID is required to save Form 3CEB" },
+          { status: 400 }
+        );
+      }
+
+      // Validate the engagement exists
+      const engagement = await prisma.engagement.findUnique({
+        where: { id: engagementId },
+        include: { client: true },
+      });
+
+      if (!engagement) {
+        return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
+      }
+
+      // Validate the form data
+      const errors = validateForm3CEB(data);
+      const criticalErrors = errors.filter((e) => e.severity === "error");
+      const status = criticalErrors.length === 0 ? "PENDING_REVIEW" : "DRAFT";
+
+      // If documentId provided, update existing; otherwise create new
+      if (documentId) {
+        const document = await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            data: data,
+            validationErrors: errors.length > 0 ? (errors as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+            status: status,
+            name: `Form 3CEB - ${engagement.client.name} - ${engagement.financialYear}`,
+            updatedAt: new Date(),
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          documentId: document.id,
+          status: document.status,
+          message: `Form 3CEB ${status === "DRAFT" ? "saved as draft" : "saved and ready for review"}`,
+          errors: errors.filter((e) => e.severity === "error"),
+          warnings: errors.filter((e) => e.severity === "warning"),
+        });
+      } else {
+        // Create new document
+        const document = await prisma.document.create({
+          data: {
+            engagementId: engagementId,
+            clientId: engagement.clientId,
+            type: "FORM_3CEB",
+            status: status,
+            name: `Form 3CEB - ${engagement.client.name} - ${engagement.financialYear}`,
+            data: data,
+            validationErrors: errors.length > 0 ? (errors as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          documentId: document.id,
+          status: document.status,
+          message: `Form 3CEB created ${status === "DRAFT" ? "as draft" : "and ready for review"}`,
+          errors: errors.filter((e) => e.severity === "error"),
+          warnings: errors.filter((e) => e.severity === "warning"),
+        });
+      }
+    }
+
+    if (action === "load") {
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      if (!engagementId) {
+        return NextResponse.json(
+          { error: "Engagement ID is required" },
+          { status: 400 }
+        );
+      }
+
+      // Load existing Form 3CEB document for this engagement
+      const document = await prisma.document.findFirst({
+        where: {
+          engagementId: engagementId,
+          type: "FORM_3CEB",
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      if (!document) {
+        // Load data from engagement to pre-fill
+        const engagement = await prisma.engagement.findUnique({
+          where: { id: engagementId },
+          include: {
+            client: {
+              include: {
+                associatedEnterprises: true,
+              },
+            },
+            transactions: {
+              include: {
+                ae: true,
+              },
+            },
+          },
+        });
+
+        if (!engagement) {
+          return NextResponse.json({ error: "Engagement not found" }, { status: 404 });
+        }
+
+        // Return pre-filled data from engagement
+        return NextResponse.json({
+          exists: false,
+          prefillData: {
+            assesseeDetails: {
+              name: engagement.client.name,
+              pan: engagement.client.pan,
+              address: engagement.client.address || "",
+              city: engagement.client.city || "",
+              state: engagement.client.state || "",
+              pinCode: engagement.client.pincode || "",
+              nicCode: engagement.client.nicCode || "",
+              nicDescription: engagement.client.nicDescription || "",
+              financialYear: engagement.financialYear,
+              assessmentYear: engagement.assessmentYear,
+            },
+            associatedEnterprises: engagement.client.associatedEnterprises.map((ae) => ({
+              id: ae.id,
+              name: ae.name,
+              country: ae.country,
+              countryCode: ae.country,
+              address: ae.address || "",
+              relationshipType: ae.relationship,
+              taxId: ae.tin || "",
+            })),
+            transactions: engagement.transactions.map((txn) => ({
+              id: txn.id,
+              aeId: txn.aeId,
+              aeName: txn.ae.name,
+              aeCountry: txn.ae.country,
+              natureCode: txn.natureCode,
+              description: txn.description || "",
+              valueAsPerBooks: Number(txn.amount),
+              valueAsPerALP: Number(txn.armLengthMedian || txn.amount),
+              method: txn.method || "TNMM",
+              safeHarbourOpted: txn.safeHarbourApplied,
+            })),
+          },
+        });
+      }
+
+      return NextResponse.json({
+        exists: true,
+        documentId: document.id,
+        status: document.status,
+        data: document.data,
+        validationErrors: document.validationErrors,
+        lastUpdated: document.updatedAt,
+      });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

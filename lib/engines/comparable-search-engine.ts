@@ -5732,13 +5732,13 @@ export function checkSafeHarbourEligibility(
   const opOr = (testedParty.financials.operatingProfit / testedParty.financials.revenue) * 100;
 
   // Rule 10TD: Software Development Services / ITeS
-  // Updated per CBDT Notification 2023 - Safe Harbour rates for FY 2023-24 onwards
+  // Updated per CBDT Notification 117/2023 dated 07-11-2023 - Safe Harbour rates for FY 2023-24 onwards
   if (["IT_SERVICES", "ITES_BPO", "KPO"].includes(testedParty.functionalProfile)) {
     const margin = opOc;
-    // Current Safe Harbour rates (FY 2023-24 onwards):
-    // - IT/ITeS Services: OP/OC ≥ 20% (increased from earlier 17-18%)
-    // - KPO Services: OP/OC ≥ 24%
-    const minMargin = testedParty.functionalProfile === "KPO" ? 24 : 20;
+    // Current Safe Harbour rates (FY 2023-24 onwards per CBDT Notification 117/2023):
+    // - IT/ITeS Services: OP/OC ≥ 18% (normal), 19.5% (significant ownership)
+    // - KPO Services: OP/OC ≥ 18-24% based on employee cost ratio
+    const minMargin = testedParty.functionalProfile === "KPO" ? 24 : 18;
 
     eligibleCategories.push({
       category: "Software Development / ITeS",

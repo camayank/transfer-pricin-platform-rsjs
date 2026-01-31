@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,9 @@ import {
   ArrowLeft,
   Download,
   ChevronRight,
+  Save,
+  Loader2,
+  FolderOpen,
 } from "lucide-react";
 
 const WIZARD_STEPS = [
@@ -88,6 +91,17 @@ const initialCADetails: CADetails = {
   dateOfReport: new Date().toISOString().split("T")[0],
 };
 
+interface Engagement {
+  id: string;
+  financialYear: string;
+  assessmentYear: string;
+  client: {
+    id: string;
+    name: string;
+    pan: string;
+  };
+}
+
 export default function Form3CEBPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [assessee, setAssessee] = useState<AssesseeDetails>(initialAssessee);
@@ -95,6 +109,132 @@ export default function Form3CEBPage() {
   const [transactions, setTransactions] = useState<InternationalTransaction[]>([]);
   const [caDetails, setCADetails] = useState<CADetails>(initialCADetails);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+  // Engagement and save state
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [selectedEngagementId, setSelectedEngagementId] = useState<string>("");
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [documentStatus, setDocumentStatus] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Load engagements on mount
+  useEffect(() => {
+    const loadEngagements = async () => {
+      try {
+        const res = await fetch("/api/engagements");
+        if (res.ok) {
+          const data = await res.json();
+          setEngagements(data.engagements || []);
+        }
+      } catch (error) {
+        console.error("Failed to load engagements:", error);
+      }
+    };
+    loadEngagements();
+  }, []);
+
+  // Load Form 3CEB data when engagement is selected
+  const loadFromEngagement = async (engagementId: string) => {
+    if (!engagementId) return;
+
+    setIsLoading(true);
+    setSaveMessage(null);
+
+    try {
+      const res = await fetch("/api/form-3ceb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "load", engagementId }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+
+        if (result.exists) {
+          // Load existing document
+          setDocumentId(result.documentId);
+          setDocumentStatus(result.status);
+          const savedData = result.data;
+
+          if (savedData.assesseeDetails) setAssessee(savedData.assesseeDetails);
+          if (savedData.associatedEnterprises) setAssociatedEnterprises(savedData.associatedEnterprises);
+          if (savedData.transactions) setTransactions(savedData.transactions);
+          if (savedData.caDetails) setCADetails(savedData.caDetails);
+
+          setSaveMessage({ type: "success", text: `Loaded existing Form 3CEB (${result.status})` });
+        } else if (result.prefillData) {
+          // Pre-fill from engagement data
+          setDocumentId(null);
+          setDocumentStatus(null);
+
+          if (result.prefillData.assesseeDetails) {
+            setAssessee({ ...initialAssessee, ...result.prefillData.assesseeDetails });
+          }
+          if (result.prefillData.associatedEnterprises?.length > 0) {
+            setAssociatedEnterprises(result.prefillData.associatedEnterprises);
+          }
+          if (result.prefillData.transactions?.length > 0) {
+            setTransactions(result.prefillData.transactions);
+          }
+
+          setSaveMessage({ type: "success", text: "Pre-filled data from engagement" });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load form data:", error);
+      setSaveMessage({ type: "error", text: "Failed to load form data" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save Form 3CEB to backend
+  const saveToBackend = async () => {
+    if (!selectedEngagementId) {
+      setSaveMessage({ type: "error", text: "Please select an engagement first" });
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const formData = {
+      assesseeDetails: assessee,
+      associatedEnterprises,
+      transactions,
+      caDetails,
+    };
+
+    try {
+      const res = await fetch("/api/form-3ceb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save",
+          data: formData,
+          engagementId: selectedEngagementId,
+          documentId: documentId,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        setDocumentId(result.documentId);
+        setDocumentStatus(result.status);
+        setSaveMessage({ type: "success", text: result.message });
+      } else {
+        setSaveMessage({ type: "error", text: result.error || "Failed to save" });
+      }
+    } catch (error) {
+      console.error("Failed to save form:", error);
+      setSaveMessage({ type: "error", text: "Failed to save form" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Add new AE
   const addAE = () => {
@@ -295,14 +435,89 @@ export default function Form3CEBPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
-          Form 3CEB Generator
-        </h1>
-        <p className="text-[var(--text-secondary)]">
-          Transfer Pricing Audit Report under Section 92E
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
+            Form 3CEB Generator
+          </h1>
+          <p className="text-[var(--text-secondary)]">
+            Transfer Pricing Audit Report under Section 92E
+          </p>
+        </div>
+
+        {/* Engagement Selector and Save Controls */}
+        <div className="flex items-center gap-3">
+          <Select
+            value={selectedEngagementId}
+            onValueChange={(value) => {
+              setSelectedEngagementId(value);
+              loadFromEngagement(value);
+            }}
+          >
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Select engagement to save/load" />
+            </SelectTrigger>
+            <SelectContent>
+              {engagements.map((eng) => (
+                <SelectItem key={eng.id} value={eng.id}>
+                  {eng.client.name} - FY {eng.financialYear}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadFromEngagement(selectedEngagementId)}
+            disabled={!selectedEngagementId || isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <FolderOpen className="mr-1 h-4 w-4" />
+            )}
+            Load
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={saveToBackend}
+            disabled={!selectedEngagementId || isSaving}
+          >
+            {isSaving ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-1 h-4 w-4" />
+            )}
+            Save
+          </Button>
+
+          {documentStatus && (
+            <Badge variant={documentStatus === "DRAFT" ? "secondary" : "default"}>
+              {documentStatus}
+            </Badge>
+          )}
+        </div>
       </div>
+
+      {/* Save/Load Message */}
+      {saveMessage && (
+        <div
+          className={`rounded-lg p-3 ${
+            saveMessage.type === "success"
+              ? "bg-[var(--success-bg)] text-[var(--success)]"
+              : "bg-[var(--error-bg)] text-[var(--error)]"
+          }`}
+        >
+          {saveMessage.type === "success" ? (
+            <CheckCircle className="mr-2 inline h-4 w-4" />
+          ) : (
+            <AlertTriangle className="mr-2 inline h-4 w-4" />
+          )}
+          {saveMessage.text}
+        </div>
+      )}
 
       {/* Step Progress */}
       <div className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">

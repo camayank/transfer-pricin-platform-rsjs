@@ -628,12 +628,11 @@ export class BenchmarkingEngine {
     result.arithmeticMean = values.reduce((sum, v) => sum + v, 0) / n;
     result.median = n % 2 === 0 ? (values[n / 2 - 1] + values[n / 2]) / 2 : values[Math.floor(n / 2)];
 
-    // Quartiles
-    if (n >= 4) {
-      const q1Idx = Math.floor(n / 4);
-      const q3Idx = Math.floor((3 * n) / 4);
-      result.lowerQuartile = values[q1Idx];
-      result.upperQuartile = values[q3Idx];
+    // Calculate 35th and 65th percentiles as per Indian TP Rules (Rule 10B)
+    // Using linear interpolation for accurate percentile calculation
+    if (n >= 2) {
+      result.lowerQuartile = this.calculatePercentile(values, 35);
+      result.upperQuartile = this.calculatePercentile(values, 65);
     } else {
       result.lowerQuartile = result.minimum;
       result.upperQuartile = result.maximum;
@@ -754,6 +753,36 @@ export class BenchmarkingEngine {
       [PLIType.NCP_SALES]: "Net Cost Plus to Sales",
     };
     return descriptions[pliType] || pliType;
+  }
+
+  /**
+   * Calculate percentile using linear interpolation
+   * As per Indian Transfer Pricing rules (Rule 10B), the interquartile range
+   * uses 35th and 65th percentiles (not 25th/75th)
+   * @param values - Sorted array of values
+   * @param percentile - Percentile to calculate (0-100)
+   * @returns Interpolated value at the given percentile
+   */
+  private calculatePercentile(values: number[], percentile: number): number {
+    if (values.length === 0) return 0;
+    if (values.length === 1) return values[0];
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const n = sorted.length;
+
+    // Calculate the index using linear interpolation (exclusive method)
+    // Index = (percentile / 100) * (n - 1)
+    const index = (percentile / 100) * (n - 1);
+    const lowerIndex = Math.floor(index);
+    const upperIndex = Math.ceil(index);
+
+    if (lowerIndex === upperIndex) {
+      return sorted[lowerIndex];
+    }
+
+    // Linear interpolation between the two adjacent values
+    const fraction = index - lowerIndex;
+    return sorted[lowerIndex] + fraction * (sorted[upperIndex] - sorted[lowerIndex]);
   }
 }
 
@@ -1036,10 +1065,10 @@ export class MultiYearTestingEngine {
         adjustedValues.reduce((sum, v) => sum + v, 0) / adjustedValues.length;
       enhancedResult.median = this.calculateMedian(adjustedValues);
 
-      const n = adjustedValues.length;
-      if (n >= 4) {
-        enhancedResult.lowerQuartile = adjustedValues[Math.floor(n * 0.25)];
-        enhancedResult.upperQuartile = adjustedValues[Math.floor(n * 0.75)];
+      // Calculate 35th/65th percentiles as per Indian TP Rules (Rule 10B)
+      if (adjustedValues.length >= 2) {
+        enhancedResult.lowerQuartile = this.calculatePercentile(adjustedValues, 35);
+        enhancedResult.upperQuartile = this.calculatePercentile(adjustedValues, 65);
       } else {
         enhancedResult.lowerQuartile = enhancedResult.minimum;
         enhancedResult.upperQuartile = enhancedResult.maximum;
@@ -1075,6 +1104,36 @@ export class MultiYearTestingEngine {
     return sorted.length % 2 === 0
       ? (sorted[mid - 1] + sorted[mid]) / 2
       : sorted[mid];
+  }
+
+  /**
+   * Calculate percentile using linear interpolation
+   * As per Indian Transfer Pricing rules (Rule 10B), the interquartile range
+   * uses 35th and 65th percentiles (not 25th/75th)
+   * @param values - Sorted array of values
+   * @param percentile - Percentile to calculate (0-100)
+   * @returns Interpolated value at the given percentile
+   */
+  private calculatePercentile(values: number[], percentile: number): number {
+    if (values.length === 0) return 0;
+    if (values.length === 1) return values[0];
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const n = sorted.length;
+
+    // Calculate the index using linear interpolation (exclusive method)
+    // Index = (percentile / 100) * (n - 1)
+    const index = (percentile / 100) * (n - 1);
+    const lowerIndex = Math.floor(index);
+    const upperIndex = Math.ceil(index);
+
+    if (lowerIndex === upperIndex) {
+      return sorted[lowerIndex];
+    }
+
+    // Linear interpolation between the two adjacent values
+    const fraction = index - lowerIndex;
+    return sorted[lowerIndex] + fraction * (sorted[upperIndex] - sorted[lowerIndex]);
   }
 
   private calculateStdDev(values: number[], mean: number): number {

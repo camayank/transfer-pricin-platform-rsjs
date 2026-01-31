@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         name: user.name || null,
         role: user.role,
         firmId: user.firmId,
-        firmName: user.firmName || null,
+        firmName: null,
       },
       {
         firmId: client.firmId,
@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         name: user.name || null,
         role: user.role,
         firmId: user.firmId,
-        firmName: user.firmName || null,
+        firmName: null,
       },
       {
         firmId: existingClient.firmId,
@@ -206,7 +206,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         name: user.name || null,
         role: user.role,
         firmId: user.firmId,
-        firmName: user.firmName || null,
+        firmName: null,
       },
       {
         firmId: existingClient.firmId,

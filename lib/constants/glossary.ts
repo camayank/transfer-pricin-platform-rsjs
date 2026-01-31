@@ -93,14 +93,14 @@ export const TP_GLOSSARY: GlossaryTerm[] = [
   {
     term: "Safe Harbour",
     definition: "A regime where the tax authority accepts the transfer price declared by the taxpayer without detailed scrutiny, provided certain conditions and margins are met.",
-    example: "IT/ITeS companies with OP/OC of 17% or more can opt for safe harbour.",
+    example: "IT/ITeS companies with OP/OC of 18% or more can opt for safe harbour (per CBDT Notification 117/2023).",
     relatedTerms: ["Rule 10TD", "Form 3CEFA", "OP/OC"],
     category: "regulation",
   },
   {
     term: "Rule 10TD",
     definition: "Income Tax Rule prescribing safe harbour margins for eligible international transactions including IT/ITeS, KPO, and intra-group loans.",
-    example: "Rule 10TD specifies 17-24% OP/OC margins for IT/ITeS based on revenue.",
+    example: "Rule 10TD specifies 18-24% OP/OC margins for IT/ITeS based on revenue (per CBDT Notification 117/2023).",
     relatedTerms: ["Safe Harbour", "IT/ITeS", "KPO"],
     category: "regulation",
   },

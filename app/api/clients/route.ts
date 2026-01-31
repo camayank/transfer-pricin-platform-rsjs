@@ -21,6 +21,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const showAll = searchParams.get("all") === "true"; // Admin can request all clients
 
+    // Pagination parameters
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const skip = (page - 1) * limit;
+
     // Build where clause based on user role
     // - Admin/Partner/Senior Manager: See ALL clients in firm
     // - Manager: See clients where assignedTo OR reviewer
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest) {
       name: user.name || null,
       role: user.role,
       firmId: user.firmId,
-      firmName: user.firmName || null,
+      firmName: null,
     });
 
     const where: Record<string, unknown> = { ...baseFilter };
@@ -66,24 +71,42 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const clients = await prisma.client.findMany({
-      where,
-      include: {
-        assignedTo: {
-          select: { id: true, name: true, email: true },
+    // Get total count and clients in parallel
+    const [total, clients] = await Promise.all([
+      prisma.client.count({ where }),
+      prisma.client.findMany({
+        where,
+        include: {
+          assignedTo: {
+            select: { id: true, name: true, email: true },
+          },
+          reviewer: {
+            select: { id: true, name: true, email: true },
+          },
+          engagements: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
         },
-        reviewer: {
-          select: { id: true, name: true, email: true },
-        },
-        engagements: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    return NextResponse.json({ clients });
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      clients,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching clients:", error);
     return NextResponse.json(

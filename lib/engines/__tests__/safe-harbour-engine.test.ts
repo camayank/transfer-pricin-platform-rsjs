@@ -33,7 +33,7 @@ describe('Safe Harbour Engine', () => {
   });
 
   describe('IT/ITeS Safe Harbour (Rule 10TD)', () => {
-    test('should be eligible when OP/OC >= 17% (normal case)', () => {
+    test('should be eligible when OP/OC >= 18% (normal case per CBDT 117/2023)', () => {
       const result = calculator.checkEligibility({
         transactionType: SafeHarbourTransactionType.IT_ITES,
         operatingRevenue: 10000000,
@@ -43,10 +43,10 @@ describe('Safe Harbour Engine', () => {
       });
 
       expect(result.eligible).toBe(true);
-      expect(result.currentValue).toBeGreaterThan(17);
+      expect(result.currentValue).toBeGreaterThan(18);
     });
 
-    test('should not be eligible when OP/OC < 17%', () => {
+    test('should not be eligible when OP/OC < 18%', () => {
       const result = calculator.checkEligibility({
         transactionType: SafeHarbourTransactionType.IT_ITES,
         operatingRevenue: 10000000,

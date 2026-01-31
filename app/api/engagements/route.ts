@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const year = searchParams.get("year");
 
+    // Pagination parameters
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const skip = (page - 1) * limit;
+
     // Build where clause with user-level access filtering
     // - Admin/Partner/Senior Manager: See ALL firm engagements
     // - Manager: See engagements for clients they are assigned to or reviewing
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
       name: user.name || null,
       role: user.role,
       firmId: user.firmId,
-      firmName: user.firmName || null,
+      firmName: null,
     });
 
     const where: Record<string, unknown> = { ...accessFilter };
@@ -43,31 +48,49 @@ export async function GET(request: NextRequest) {
       where.financialYear = year;
     }
 
-    const engagements = await prisma.engagement.findMany({
-      where,
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            pan: true,
-            industry: true,
-            assignedToId: true,
-            reviewerId: true,
+    // Get total count and engagements in parallel
+    const [total, engagements] = await Promise.all([
+      prisma.engagement.count({ where }),
+      prisma.engagement.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              id: true,
+              name: true,
+              pan: true,
+              industry: true,
+              assignedToId: true,
+              reviewerId: true,
+            },
+          },
+          _count: {
+            select: {
+              transactions: true,
+              documents: true,
+              safeHarbourResults: true,
+            },
           },
         },
-        _count: {
-          select: {
-            transactions: true,
-            documents: true,
-            safeHarbourResults: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    return NextResponse.json({ engagements });
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      engagements,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching engagements:", error);
     return NextResponse.json(
@@ -128,7 +151,7 @@ export async function POST(request: NextRequest) {
         name: user.name || null,
         role: user.role,
         firmId: user.firmId,
-        firmName: user.firmName || null,
+        firmName: null,
       },
       {
         firmId: client.firmId,

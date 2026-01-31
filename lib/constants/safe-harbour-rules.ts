@@ -26,14 +26,14 @@ export interface SafeHarbourRule {
 // Safe Harbour Rules - Updated FY 2023-24 onwards per CBDT Notifications
 export const SAFE_HARBOUR_RULES: Record<SafeHarbourType, SafeHarbourRule> = {
   // IT/ITeS Services (Software Development, BPO, etc.)
-  // Updated rates per CBDT Notification for FY 2023-24 onwards
+  // Per CBDT Notification No. 117/2023 dated 07-11-2023 for FY 2023-24 onwards
   IT_ITES: {
     name: "IT/ITeS Services",
     description: "Software development, IT support, BPO, call centers",
     marginType: "OP/OC",
     thresholds: [
-      { condition: "Normal case", margin: 20 }, // Updated from 17%
-      { condition: "Significant ownership (>50%)", margin: 22 }, // Updated from 18%
+      { condition: "Normal case", margin: 18 }, // Per CBDT Notification 117/2023
+      { condition: "Significant ownership (>50%)", margin: 19.5 }, // Per CBDT Notification 117/2023
     ],
     eligibilityConditions: [
       "Receipt from Associated Enterprise",
@@ -41,15 +41,15 @@ export const SAFE_HARBOUR_RULES: Record<SafeHarbourType, SafeHarbourRule> = {
     ],
   },
 
-  // KPO Services - Updated rates per CBDT Notification
+  // KPO Services - Per CBDT Notification No. 117/2023 dated 07-11-2023
   KPO: {
     name: "Knowledge Process Outsourcing",
     description: "Research, analytics, legal services, engineering design",
     marginType: "OP/OC",
     thresholds: [
-      { condition: "Employee cost < 40% of total cost", margin: 21 }, // Updated from 18%
-      { condition: "Employee cost 40-60% of total cost", margin: 24 }, // Updated from 21%
-      { condition: "Employee cost > 60% of total cost", margin: 27 }, // Updated from 24%
+      { condition: "Employee cost < 40% of total cost", margin: 18 }, // Per CBDT Notification 117/2023
+      { condition: "Employee cost 40-60% of total cost", margin: 21 }, // Per CBDT Notification 117/2023
+      { condition: "Employee cost > 60% of total cost", margin: 24 }, // Per CBDT Notification 117/2023
     ],
     eligibilityConditions: [
       "Receipt from Associated Enterprise",
@@ -195,11 +195,13 @@ export function checkSafeHarbourEligibility(
     let requiredMargin: number;
 
     if (type === "KPO" && employeeCostRatio !== undefined) {
+      // Per CBDT Notification 117/2023 dated 07-11-2023
       if (employeeCostRatio < 40) requiredMargin = 18;
       else if (employeeCostRatio <= 60) requiredMargin = 21;
       else requiredMargin = 24;
     } else if (type === "IT_ITES") {
-      requiredMargin = 17; // Default, 18% for significant ownership
+      // Per CBDT Notification 117/2023: 18% normal, 19.5% for significant ownership
+      requiredMargin = 18;
     } else {
       requiredMargin = rule.thresholds[0].margin as number;
     }

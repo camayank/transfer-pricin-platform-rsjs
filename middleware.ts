@@ -2,7 +2,7 @@
  * ================================================================================
  * DIGICOMPLY NEXT.JS MIDDLEWARE
  *
- * Handles authentication and authorization at the network boundary.
+ * Handles authentication, authorization, and rate limiting at the network boundary.
  * Enforces route-based access control before requests reach API handlers.
  *
  * Note: This is a lightweight check. Detailed permission checks happen in API routes.
@@ -13,6 +13,98 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { ALL_ROLES, HIERARCHY_ROLES, FUNCTIONAL_ROLES, type UserRole } from "@/types/roles";
+
+// ================================================================================
+// RATE LIMITING CONFIGURATION
+// ================================================================================
+
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+// Rate limit store (in-memory for Edge runtime)
+// Note: For production with multiple instances, use Redis or similar
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+// Rate limit configuration by route type
+const RATE_LIMITS = {
+  // Auth endpoints - stricter limits to prevent brute force
+  auth: { limit: 10, windowMs: 60 * 1000 }, // 10 requests per minute
+  // AI endpoints - more expensive operations
+  ai: { limit: 20, windowMs: 60 * 1000 }, // 20 requests per minute
+  // Form generation/saving
+  forms: { limit: 30, windowMs: 60 * 1000 }, // 30 requests per minute
+  // Default API endpoints
+  api: { limit: 100, windowMs: 60 * 1000 }, // 100 requests per minute
+  // Static/page requests - more lenient
+  pages: { limit: 200, windowMs: 60 * 1000 }, // 200 requests per minute
+};
+
+/**
+ * Get rate limit configuration for a given path
+ */
+function getRateLimitConfig(pathname: string): { limit: number; windowMs: number } {
+  if (pathname.startsWith("/api/auth")) {
+    return RATE_LIMITS.auth;
+  }
+  if (pathname.startsWith("/api/ai")) {
+    return RATE_LIMITS.ai;
+  }
+  if (pathname.match(/\/api\/(form-3ceb|safe-harbour|benchmarking|penalty)/)) {
+    return RATE_LIMITS.forms;
+  }
+  if (pathname.startsWith("/api/")) {
+    return RATE_LIMITS.api;
+  }
+  return RATE_LIMITS.pages;
+}
+
+/**
+ * Check rate limit for a given identifier
+ */
+function checkRateLimit(
+  identifier: string,
+  config: { limit: number; windowMs: number }
+): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(identifier);
+
+  // Clean up expired entries periodically
+  if (rateLimitStore.size > 10000) {
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (now > value.resetTime) {
+        rateLimitStore.delete(key);
+      }
+    }
+  }
+
+  if (!entry || now > entry.resetTime) {
+    // First request or window expired
+    rateLimitStore.set(identifier, {
+      count: 1,
+      resetTime: now + config.windowMs,
+    });
+    return { allowed: true, remaining: config.limit - 1, resetIn: config.windowMs };
+  }
+
+  if (entry.count >= config.limit) {
+    // Rate limit exceeded
+    return {
+      allowed: false,
+      remaining: 0,
+      resetIn: entry.resetTime - now,
+    };
+  }
+
+  // Increment counter
+  entry.count++;
+  return {
+    allowed: true,
+    remaining: config.limit - entry.count,
+    resetIn: entry.resetTime - now,
+  };
+}
 
 // Route protection configuration
 interface RouteConfig {
@@ -90,6 +182,47 @@ const publicRoutes = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip static assets completely
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+    return NextResponse.next();
+  }
+
+  // Apply rate limiting for API routes
+  if (pathname.startsWith("/api/")) {
+    // Get client identifier (IP address or forwarded IP)
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+    const identifier = `${ip}:${pathname.split("/").slice(0, 3).join("/")}`;
+
+    const rateLimitConfig = getRateLimitConfig(pathname);
+    const { allowed, remaining, resetIn } = checkRateLimit(identifier, rateLimitConfig);
+
+    if (!allowed) {
+      return new NextResponse(
+        JSON.stringify({
+          error: "Too Many Requests",
+          message: "Rate limit exceeded. Please try again later.",
+          retryAfter: Math.ceil(resetIn / 1000),
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil(resetIn / 1000)),
+            "X-RateLimit-Limit": String(rateLimitConfig.limit),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(Date.now() + resetIn),
+          },
+        }
+      );
+    }
+
+    // Add rate limit headers to successful responses
+    const response = NextResponse.next();
+    response.headers.set("X-RateLimit-Limit", String(rateLimitConfig.limit));
+    response.headers.set("X-RateLimit-Remaining", String(remaining));
+  }
 
   // Skip public routes
   for (const route of publicRoutes) {

@@ -93,6 +93,11 @@ model Client {
 
   @@unique([pan, firmId])
   @@index([firmId])
+  @@index([assignedToId])
+  @@index([reviewerId])
+  @@index([industry])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Engagement {
@@ -148,6 +153,11 @@ model Engagement {
   @@unique([clientId, financialYear])
   @@index([clientId])
   @@index([status])
+  @@index([financialYear])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@index([priority])
+  @@index([createdAt])
 }
 
 // ============== TRANSFER PRICING SPECIFIC ==============
@@ -302,6 +312,8 @@ model DisputeCase {
 
   @@index([engagementId])
   @@index([stage])
+  @@index([status])
+  @@index([nextHearingDate])
 }
 
 // ============== DOCUMENT ==============
@@ -338,6 +350,9 @@ model Document {
 
   @@index([engagementId])
   @@index([clientId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============== AUDIT ==============
